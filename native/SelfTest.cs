@@ -157,6 +157,7 @@ namespace Swarmfall
             ok &= CheckReactions(report);
             ok &= CheckDifficulty(report);
             ok &= CheckSurvival(report);
+            ok &= CheckUpdater(report);
             report.AppendLine(ok ? "RESULT: PASS" : "RESULT: FAIL");
             File.WriteAllText(path, report.ToString());
             return ok ? 0 : 1;
@@ -223,6 +224,53 @@ namespace Swarmfall
                 run.Frame(1 / 60f);
                 run.Input.EndFrame();
             }
+        }
+
+        // Offline: a temp folder stands in for GitHub. Downloads are checked but never installed over this exe.
+        static bool CheckUpdater(StringBuilder report)
+        {
+            bool ok = true;
+            int release;
+            long size;
+            string sha;
+            ok &= Expect(Updater.TryParse("release=7\r\nsize=10\nsha256=" + new string('A', 64) + "\n", out release, out size, out sha) && release == 7 && size == 10 && sha == new string('a', 64), "latest.txt should parse", report);
+            ok &= Expect(!Updater.TryParse("release=7\nsize=10\n", out release, out size, out sha) && !Updater.TryParse("<html>Not Found</html>", out release, out size, out sha) && !Updater.TryParse(null, out release, out size, out sha), "a broken latest.txt should be rejected", report);
+
+            string dir = Path.Combine(Path.GetTempPath(), "swarmfall-update-test-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(dir);
+            string download = System.Diagnostics.Process.GetCurrentProcess().MainModule.FileName + ".download";
+            string savedSource = Updater.Source;
+            try
+            {
+                byte[] fake = Encoding.ASCII.GetBytes("not really a game, just update test bytes");
+                File.WriteAllBytes(Path.Combine(dir, "Swarmfall.exe"), fake);
+                Updater.Source = new Uri(dir + Path.DirectorySeparatorChar).AbsoluteUri;
+                Func<int, string, UpdateState> attempt = (rel, hash) =>
+                {
+                    File.WriteAllText(Path.Combine(dir, "latest.txt"), "release=" + rel + "\nsize=" + fake.Length + "\nsha256=" + hash + "\n");
+                    Updater.State = UpdateState.Idle;
+                    Updater.CheckAsync();
+                    for (int i = 0; i < 200 && Updater.Busy; i++) System.Threading.Thread.Sleep(25);
+                    if (Updater.State != UpdateState.Available) return Updater.State;
+                    Updater.DownloadAsync();
+                    for (int i = 0; i < 200 && Updater.Busy; i++) System.Threading.Thread.Sleep(25);
+                    return Updater.State;
+                };
+                ok &= Expect(attempt(Updater.Release, Updater.Sha256(fake)) == UpdateState.UpToDate, "the same release should count as up to date", report);
+                ok &= Expect(attempt(Updater.Release - 1, Updater.Sha256(fake)) == UpdateState.UpToDate, "an older release should never be offered", report);
+                ok &= Expect(attempt(Updater.Release + 1, new string('0', 64)) == UpdateState.Failed && Updater.Error != null && !File.Exists(download), "a download with the wrong checksum should be refused and removed", report);
+                ok &= Expect(attempt(Updater.Release + 1, Updater.Sha256(fake)) == UpdateState.Ready && File.Exists(download) && Updater.LatestRelease == Updater.Release + 1, "a newer release should download and check out", report);
+            }
+            finally
+            {
+                Updater.Source = savedSource;
+                Updater.State = UpdateState.Idle;
+                Updater.Error = null;
+                try { File.Delete(download); } catch { }
+                Directory.Delete(dir, true);
+            }
+            report.AppendLine("--- Updater: latest.txt, newer only, checksum, download " + (ok ? "ok" : "FAILED"));
+            return ok;
         }
 
         static bool Expect(bool condition, string what, StringBuilder report)

@@ -9,7 +9,19 @@ own, catch wild creatures to fight beside you, and climb to the final boss.
 2. Double-click `Swarmfall.exe`.
 
 It needs no install and no internet. It only needs the .NET Framework 4 and OpenGL, which are part of Windows.
-Windows may warn that the file is from an unknown publisher the first time you run it.
+Windows may warn that the file is from an unknown publisher the first time you run it. Keep `Swarmfall.exe` in a
+folder you own, such as Documents, so it can update itself.
+
+## Updating
+
+Click **Check for updates** at the top right of the main menu. If a newer release is out, click again to download
+it, then once more to restart into it. The game only goes online when you click. The download is checked against
+its published checksum before it replaces anything, and your save is kept.
+
+You can also update without opening the game: put [`Update Swarmfall.cmd`](Update%20Swarmfall.cmd) next to
+`Swarmfall.exe` and double-click it, or run `Swarmfall.exe --update`.
+
+Release 1 had no updater, so if you have it, download `Swarmfall.exe` again once by hand.
 
 ## Controls
 

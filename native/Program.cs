@@ -148,6 +148,11 @@ namespace Swarmfall
         {
             try
             {
+                // Updates: --update-source points at another copy of the release files, for testing.
+                if (Arg(args, "--update-source") != null) Updater.Source = Arg(args, "--update-source");
+                Updater.JustUpdated = Array.IndexOf(args, "--updated") >= 0;
+                Updater.CleanUpAfterUpdate();
+                if (Array.IndexOf(args, "--update") >= 0) return RunUpdate(Array.IndexOf(args, "--quiet") >= 0);
                 int test = Array.IndexOf(args, "--selftest");
                 if (test >= 0) return SelfTest.Run_(args[test + 1]);
                 int balance = Array.IndexOf(args, "--balance");
@@ -168,6 +173,19 @@ namespace Swarmfall
                 MessageBox.Show("Swarmfall Tower hit a problem and has to close.\n\n" + e.Message + "\n\nDetails were saved to:\n" + log, "Swarmfall Tower", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return 1;
             }
+        }
+
+        // Swarmfall.exe --update: update without opening the game, then start the new version.
+        // --quiet skips the message boxes and the restart, for testing. Exit code 0 updated, 2 up to date, 1 failed.
+        static int RunUpdate(bool quiet)
+        {
+            int result = Updater.RunHeadless(!quiet);
+            if (!quiet)
+            {
+                if (result == 2) MessageBox.Show("Swarmfall Tower is up to date (Release " + Updater.Release + ").", "Swarmfall Tower", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                else if (result == 1) MessageBox.Show("The update didn't work.\n\n" + Updater.Error, "Swarmfall Tower", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
+            return result;
         }
 
         static string Arg(string[] args, string name)

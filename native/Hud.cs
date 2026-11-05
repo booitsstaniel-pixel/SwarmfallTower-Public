@@ -655,6 +655,7 @@ namespace Swarmfall
             float tabX = RosterX(0);
             if (Button(menuLab ? "Roster" : "Roster (open)", tabX, TabY, TabW, TabH, false)) menuLab = false;
             if (Button(menuLab ? "Lab (open)" : "Lab", tabX + TabW + 8, TabY, TabW, TabH, false)) menuLab = true;
+            UpdateButton();
             if (menuLab)
             {
                 DrawLab();
@@ -668,6 +669,56 @@ namespace Swarmfall
             float y = DetailY + 196 + 14;
             Label(small, "WASD move  ·  Mouse camera  ·  Space jump  ·  Shift slide, or dive in the air  ·  R ultimate  ·  E interact  ·  Esc pause  ·  M mute  ·  F11 fullscreen", cx, y, Muted, 1);
             if (profile.Warning != null) Wrapped(small, profile.Warning, cx, y + 26, w - 80, Danger, 1);
+        }
+
+        // Top-right of the menu. Checks GitHub only when clicked, then offers the newer release.
+        const float UpdateW = 230;
+        void UpdateButton()
+        {
+            float x = RosterX(RosterColumns - 1) + RosterW - UpdateW, y = TabY;
+            string label;
+            bool enabled = true, primary = false;
+            switch (Updater.State)
+            {
+                case UpdateState.Checking: label = "Checking for updates..."; enabled = false; break;
+                case UpdateState.UpToDate: label = "Up to date · Release " + Updater.Release; break;
+                case UpdateState.Available: label = "Update to Release " + Updater.LatestRelease; primary = true; break;
+                case UpdateState.Downloading: label = "Downloading... " + (int)(Updater.Progress * 100) + "%"; enabled = false; break;
+                case UpdateState.Ready: label = "Restart to finish update"; primary = true; break;
+                case UpdateState.Failed: label = "Update failed · Try again"; break;
+                default: label = Updater.JustUpdated ? "Updated to Release " + Updater.Release : "Check for updates · R" + Updater.Release; break;
+            }
+            if (Button(label, x, y, UpdateW, TabH, false, enabled))
+            {
+                run.Audio.Coin();
+                if (Updater.State == UpdateState.Available) Updater.DownloadAsync();
+                else if (Updater.State == UpdateState.Ready)
+                {
+                    try
+                    {
+                        Updater.InstallAndRestart(true);
+                        Environment.Exit(0);
+                    }
+                    catch (Exception e)
+                    {
+                        Updater.Error = "The update couldn't be installed: " + e.Message;
+                        Updater.State = UpdateState.Failed;
+                    }
+                }
+                else Updater.CheckAsync();
+            }
+            if (primary) Border(x, y, UpdateW, TabH, 2, Gold);
+            string note = Updater.State == UpdateState.Failed ? Updater.Error
+                : Updater.State == UpdateState.Available ? "A newer version is on GitHub. Click to download it. Your save is kept."
+                : Updater.State == UpdateState.Ready ? "Downloaded and checked. Click to swap it in and restart. Your save is kept."
+                : null;
+            if (note != null && Hover(x, y, UpdateW, TabH))
+            {
+                float nw = 320, nx = x + UpdateW - nw, ny = y + TabH + 6;
+                Rect(nx, ny, nw, 74, Night, 0.97f);
+                Border(nx, ny, nw, 74, 2, Updater.State == UpdateState.Failed ? Danger : Gold);
+                Wrapped(small, note, nx + 10, ny + 8, nw - 20, TextCol);
+            }
         }
 
         static string Clock(float t)
