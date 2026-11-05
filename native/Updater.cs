@@ -18,7 +18,7 @@ namespace Swarmfall
     static class Updater
     {
         // Raise this by one for every public release.
-        public const int Release = 2;
+        public const int Release = 3;
         public const string DefaultSource = "https://raw.githubusercontent.com/booitsstaniel-pixel/SwarmfallTower-Public/main/";
 
         public static string Source = DefaultSource;
