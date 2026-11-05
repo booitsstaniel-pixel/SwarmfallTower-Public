@@ -1,0 +1,28 @@
+name: Windows self-test
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  selftest:
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run self-test on Swarmfall.exe
+        shell: powershell
+        run: |
+          $game = Start-Process -FilePath ./Swarmfall.exe -ArgumentList '--selftest report.txt' -Wait -PassThru
+          if ($game.ExitCode -ne 0) { throw 'Self-test failed; see report artifact' }
+      - name: Upload self-test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: swarmfall-selftest
+          path: report.txt
+          if-no-files-found: warn

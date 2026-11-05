@@ -1,0 +1,14 @@
+# Only the released game is published
+*.exe
+!/Swarmfall.exe
+*.dll
+*.pdb
+.vs/
+Thumbs.db
+.DS_Store
+
+# Saves and test reports
+save.txt
+save.txt.bak
+*selftest*.txt
+report.txt
