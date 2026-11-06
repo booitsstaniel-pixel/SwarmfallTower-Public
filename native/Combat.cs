@@ -7,6 +7,8 @@ namespace Swarmfall
     {
         public float X, Y, Z, Vx, Vy, Vz, Life, Radius = 0.45f, Dmg, Gravity, Blast, BackAt, T, Knock, Size = 0.8f, CritBonus;
         public int Pierce;
+        // Above zero, the shot is drawn as a long pointed harpoon of this length instead of a ball.
+        public float Spear;
         public string Elem;
         public uint Color;
         public bool Hostile, Returns, Turned;
@@ -38,6 +40,7 @@ namespace Swarmfall
             p.Vy = 0;
             p.Radius = 0.45f;
             p.Pierce = 0;
+            p.Spear = 0;
             p.Hostile = false;
             p.Gravity = 0;
             p.Blast = 0;
@@ -100,7 +103,7 @@ namespace Swarmfall
                 p.X += p.Vx * dt;
                 p.Y += p.Vy * dt;
                 p.Z += p.Vz * dt;
-                if (M.Rand() < 0.45f) vfx.Trail(p.X, p.Y, p.Z, p.Color, p.Size * 0.55f, 0.22f);
+                if (p.Spear <= 0 && M.Rand() < 0.45f) vfx.Trail(p.X, p.Y, p.Z, p.Color, p.Size * 0.55f, 0.22f);
 
                 bool alive = p.Life > 0;
                 if (alive)

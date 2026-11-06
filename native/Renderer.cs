@@ -84,6 +84,7 @@ namespace Swarmfall
         readonly Batch particlesAdd = new Batch(3500);
         readonly Batch rings = new Batch(9000);
         readonly Batch beams = new Batch(60);
+        readonly Batch spears = new Batch(400);
 
         readonly float[] proj = new float[16];
         readonly float[] view = new float[16];
@@ -524,6 +525,7 @@ namespace Swarmfall
         {
             foreach (Shot p in run.Projectiles.Items)
             {
+                if (p.Spear > 0) continue; // harpoons are drawn by CollectSpears
                 float s = p.Size * 1.25f;
                 Col c = new Col(p.Color);
                 Sprite(p.X, p.Y - s * 0.5f, p.Z, s, s, shotFrame, false, 0.15f, 0, c.R * 1.6f, c.G * 1.6f, c.B * 1.6f);
@@ -605,6 +607,43 @@ namespace Swarmfall
                 sx *= w; sy *= w; sz *= w;
                 beams.Quad(b.Ax - sx, b.Ay - sy, b.Az - sz, b.Ax + sx, b.Ay + sy, b.Az + sz, b.Bx + sx, b.By + sy, b.Bz + sz, b.Bx - sx, b.By - sy, b.Bz - sz, 0, 0, 0, 0, b.Color.R, b.Color.G, b.Color.B, 1);
             }
+        }
+
+        // Harpoons are solid steel, so they are drawn with normal blending rather than the beams' glow.
+        void CollectSpears()
+        {
+            spears.Reset();
+            foreach (Shot p in run.Projectiles.Items)
+                if (p.Spear > 0) Spear(p);
+        }
+
+        // A long, narrow harpoon facing the camera: thin shaft, a wider barbed head and a sharp point at the front.
+        void Spear(Shot p)
+        {
+            float speed = M.Hypot(p.Vx, p.Vy, p.Vz);
+            if (speed < 0.001f) return;
+            float dx = p.Vx / speed, dy = p.Vy / speed, dz = p.Vz / speed;
+            float mx = p.X - eyeX, my = p.Y - eyeY, mz = p.Z - eyeZ;
+            float sx = dy * mz - dz * my, sy = dz * mx - dx * mz, sz = dx * my - dy * mx;
+            float sl = M.Hypot(sx, sy, sz);
+            if (sl < 0.001f) return;
+            sx /= sl; sy /= sl; sz /= sl;
+            float len = p.Spear, shaft = len * 0.006f + 0.07f, head = len * 0.03f + 0.16f;
+            Col c = new Col(p.Color);
+            // Points along the harpoon, from the tail (0) to the tip (len), each with a half-width.
+            float[] at = { -len, -len * 0.28f, -len * 0.26f, 0 };
+            float[] half = { shaft * 0.6f, shaft, head, 0 };
+            for (int k = 0; k < 3; k++)
+            {
+                float a = at[k], b = at[k + 1], wa = half[k], wb = half[k + 1];
+                if (k == 1) wb = head;
+                float ax = p.X + dx * a, ay = p.Y + dy * a, az = p.Z + dz * a;
+                float bx = p.X + dx * b, by = p.Y + dy * b, bz = p.Z + dz * b;
+                spears.Quad(ax - sx * wa, ay - sy * wa, az - sz * wa, ax + sx * wa, ay + sy * wa, az + sz * wa, bx + sx * wb, by + sy * wb, bz + sz * wb, bx - sx * wb, by - sy * wb, bz - sz * wb, 0, 0, 0, 0, c.R, c.G, c.B, 1);
+            }
+            // A bright edge down the middle, so the steel reads against any floor.
+            float ex = p.X + dx * -len * 0.9f, ey = p.Y + dy * -len * 0.9f, ez = p.Z + dz * -len * 0.9f, w = shaft * 0.35f;
+            spears.Quad(ex - sx * w, ey - sy * w, ez - sz * w, ex + sx * w, ey + sy * w, ez + sz * w, p.X, p.Y, p.Z, p.X, p.Y, p.Z, 0, 0, 0, 0, 1, 1, 1, 1);
         }
 
         void DrawPages(Batch[] batches)
@@ -696,6 +735,8 @@ namespace Swarmfall
 
             CollectParticles(run.Vfx.Norm, particlesNorm);
             particlesNorm.Draw();
+            CollectSpears();
+            spears.Draw();
             Gl.BlendFunc(Gl.SRC_ALPHA, Gl.ONE);
             CollectParticles(run.Vfx.Add, particlesAdd);
             particlesAdd.Draw();

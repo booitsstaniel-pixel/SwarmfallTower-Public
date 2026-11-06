@@ -435,6 +435,27 @@ namespace Swarmfall
                 srun.Start(sleach);
                 Player sp = srun.Player;
                 ok &= Expect(sp.Elem == "basic" && sp.SecondElem == "iron", "Sleach should be Basic/Iron", report);
+                MoveDef harpoon = Data.Move(sleach.Move);
+                ok &= Expect(harpoon.Id == "harpoon-lance" && harpoon.Elem == "iron" && harpoon.Kind == Kind.Lance, "Sleach should start with Harpoon Lance, an Iron line move", report);
+                ok &= Expect(string.Join(",", Upgrades.PoolOf(harpoon)) == "dmg,area,cd", "Harpoon Lance should level up damage, area and attack speed only", report);
+
+                // The harpoon is a long pointed shot that flies its range, pierces everything and then disappears.
+                srun.GodMode = true;
+                srun.State = GameState.Play;
+                srun.Enemies.Clear();
+                srun.Projectiles.Clear();
+                int target = AddTarget(srun);
+                Advance(srun, 1);
+                float hpBefore = srun.Enemies.Hp[target];
+                srun.Projectiles.Clear();
+                Move lance = sp.Moves.Find(x => x.Id == "harpoon-lance");
+                ok &= Expect(lance != null && Moves.Fire(srun, lance), "Harpoon Lance should fire at a target in range", report);
+                Shot spear = srun.Projectiles.Items.Find(x => x.Spear > 0);
+                ok &= Expect(spear != null && spear.Pierce >= 999 && M.Abs(spear.Life * M.Hypot(spear.Vx, spear.Vz) - harpoon.Range * sp.Stats.Area) < 0.5f, "Harpoon Lance should be a piercing harpoon that flies its range", report);
+                Advance(srun, 60);
+                ok &= Expect(srun.Enemies.Hp[target] < hpBefore && !srun.Projectiles.Items.Exists(x => x.Spear > 0), "Harpoon Lance should hit its target and be gone after its flight", report);
+                srun.Enemies.Clear();
+                srun.Projectiles.Clear();
                 sp.Evolve();
                 ok &= Expect(sp.Stage.Name == "Dealeach" && sp.Elem == "basic" && sp.SecondElem == "volt", "Dealeach should be Basic/Volt, with Volt replacing Iron", report);
                 ok &= Expect(sleach.TypeLine() == "BASIC / IRON · VOLT AT LV 16", "Sleach's type line should show the swap: " + sleach.TypeLine(), report);

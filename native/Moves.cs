@@ -145,7 +145,7 @@ namespace Swarmfall
             return s;
         }
 
-        static bool Fire(Run run, Move m)
+        public static bool Fire(Run run, Move m)
         {
             switch (m.Def.Kind)
             {
@@ -156,6 +156,7 @@ namespace Swarmfall
                 case Kind.Nova: return FireNova(run, m);
                 case Kind.Cone: return FireCone(run, m);
                 case Kind.Beam: return FireBeam(run, m);
+                case Kind.Lance: return FireLance(run, m);
                 case Kind.Lob: return FireLob(run, m);
                 case Kind.Smite: return FireSmite(run, m);
                 case Kind.Vortex: return FireVortex(run, m);
@@ -194,6 +195,30 @@ namespace Swarmfall
             int n = CountOf(run, m);
             float step = m.Def.SpreadAll ? M.Tau / n : 0.16f;
             for (int k = 0; k < n; k++) ShootAt(run, m, (k - (n - 1) / 2f) * step, t);
+            run.Audio.Shoot();
+            return true;
+        }
+
+        // A long harpoon that flies straight ahead for the move's range and pierces everything it passes.
+        // Area makes it longer, wider and fly further.
+        static bool FireLance(Run run, Move m)
+        {
+            Target t = Aim(run, m.Def.Elem, m.Def.Range);
+            if (t == null) return false;
+            float area = m.Mods.Area * run.Player.Stats.Area;
+            float speed = m.Def.Speed * m.Mods.Speed;
+            int n = CountOf(run, m);
+            for (int k = 0; k < n; k++)
+            {
+                Shot s = ShootAt(run, m, (k - (n - 1) / 2f) * 0.14f, t);
+                if (s == null) continue;
+                s.Life = m.Def.Range * area / speed;
+                s.Pierce = 999;
+                s.Radius = m.Def.Width * area;
+                s.Spear = 2.6f * area;
+                s.Size = 0.5f;
+                s.Knock = 4;
+            }
             run.Audio.Shoot();
             return true;
         }
@@ -525,9 +550,10 @@ namespace Swarmfall
         };
 
         // Which random upgrades each kind of move can roll when it levels up.
-        static string[] PoolOf(Kind kind)
+        public static string[] PoolOf(MoveDef def)
         {
-            switch (kind)
+            if (def.Pool != null) return def.Pool;
+            switch (def.Kind)
             {
                 case Kind.Bolt: return new[] { "dmg", "cd", "count", "pierce", "speed", "crit" };
                 case Kind.Barrage: return new[] { "dmg", "cd", "count", "speed", "pierce", "crit" };
@@ -552,7 +578,7 @@ namespace Swarmfall
             Rarity rarity = RollRarity(player.Stats.Luck);
             int index = Array.IndexOf(Data.Rarities, rarity);
             float t = index / (float)(Data.Rarities.Length - 1);
-            var pool = new List<string>(PoolOf(m.Def.Kind));
+            var pool = new List<string>(PoolOf(m.Def));
             int count = index >= 2 ? 3 : 2;
             var keys = new List<string>();
             var values = new List<float>();

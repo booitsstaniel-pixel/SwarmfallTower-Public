@@ -9,7 +9,7 @@ namespace Swarmfall
         public const int Flying = 1, Shooter = 2, Charger = 4, Elite = 8, Boss = 16, Wild = 32, Downed = 64, Captive = 128;
     }
 
-    enum Kind { Bolt, Barrage, Boomerang, Nova, Cone, Beam, Lob, Smite, Vortex, Orbit, Aura, Fusion }
+    enum Kind { Bolt, Barrage, Boomerang, Nova, Cone, Beam, Lob, Smite, Vortex, Orbit, Aura, Fusion, Lance }
 
     struct Status
     {
@@ -124,6 +124,8 @@ namespace Swarmfall
         public bool SpreadAll, Glitch;
         public Status St;
         public MoveDef[] Parts;
+        // Level-up upgrades this move can roll, in place of the usual ones for its kind (see Upgrades.PoolOf).
+        public string[] Pool;
     }
 
     sealed class PassiveDef
@@ -303,7 +305,7 @@ namespace Swarmfall
         // Iron at Dealeach instead of becoming a third type. Stats, move, challenge, evolve level and signature fusion
         // were proposed by Claude on 2026-11-05 and are not yet approved.
         static readonly Partner Sleach =
-            new Partner { Id = "sleach", Name = "Sleach", Elem2 = "iron", ChallengeCounter = "guardians", ChallengeTarget = 4, ChallengeText = "Beat 4 guardians.", Role = "Lancer", Blurb = "A hunched seaweed kelpie with a steel harpoon horn that becomes a gold-masked sea serpent.", Elem = "basic", Move = "blade-fan", MaxHp = 105, Armor = 2,
+            new Partner { Id = "sleach", Name = "Sleach", Elem2 = "iron", ChallengeCounter = "guardians", ChallengeTarget = 4, ChallengeText = "Beat 4 guardians.", Role = "Lancer", Blurb = "A hunched seaweed kelpie with a steel harpoon horn that becomes a gold-masked sea serpent.", Elem = "basic", Move = "harpoon-lance", MaxHp = 105, Armor = 2,
                 Art = new Art { BodyX = 6, BodyY = 5, Head = 5, Ears = "horn", Tail = true, Main = 0x7aa89a, Accent = 0x9fb4c8, Belly = 0xb8d0c4 },
                 Evolutions = new[]
                 {
@@ -459,6 +461,9 @@ namespace Swarmfall
             new MoveDef { Id = "wail", Name = "Wail", Elem = "spirit", Kind = Kind.Nova, Cd = 5, Dmg = 11, Radius = 9, St = new Status(0, 0, 0.7f), Desc = "A wide scream that stuns everything nearby." },
             new MoveDef { Id = "anvil-drop", Name = "Anvil Drop", Elem = "iron", Kind = Kind.Lob, Cd = 2.2f, Dmg = 26, Range = 16, Radius = 3.6f, Knock = 8, Desc = "Lobs an anvil that explodes where it lands." },
             new MoveDef { Id = "blade-fan", Name = "Blade Fan", Elem = "iron", Kind = Kind.Cone, Cd = 1.6f, Dmg = 13, Range = 8, Arc = 1.1f, Desc = "Sweeps a wide cone of blades." },
+            // Sleach's starting move (user, 2026-11-05): a straight piercing line whose level-ups roll only damage,
+            // attack area and attack speed (cooldown). Numbers proposed by Claude.
+            new MoveDef { Id = "harpoon-lance", Name = "Harpoon Lance", Elem = "iron", Kind = Kind.Lance, Cd = 1.7f, Dmg = 17, Range = 17, Speed = 30, Width = 0.9f, Pool = new[] { "dmg", "area", "cd" }, Desc = "Throws a long steel harpoon that flies straight ahead and pierces every enemy in its path." },
             new MoveDef { Id = "venom-spit", Name = "Venom Spit", Elem = "venom", Kind = Kind.Bolt, Cd = 0.85f, Dmg = 8, Range = 18, Speed = 18, St = new Status(0, 1, 0), Desc = "Spits slowing venom at the nearest enemy." },
             new MoveDef { Id = "toxic-cloud", Name = "Toxic Cloud", Elem = "venom", Kind = Kind.Aura, Cd = 0.55f, Dmg = 4, Radius = 4.8f, St = new Status(0, 0.8f, 0), Desc = "A toxic cloud around you that slows and poisons." },
             new MoveDef { Id = "quick-jab", Name = "Quick Jab", Elem = "basic", Kind = Kind.Bolt, Cd = 0.6f, Dmg = 7, Range = 17, Speed = 22, Desc = "Quick plain shots at the nearest enemy." },
@@ -629,8 +634,8 @@ namespace Swarmfall
             { "chichar", new SignatureFusion { A = "skyfall", B = "arc-lance", Def = F("canopy-storm", "Canopy Storm", "volt", 2.3f, "Signature fusion", "Strikes fall on several enemies while a long bolt pierces the whole line.",
                 P(Kind.Smite, 36, range: 22, radius: 3, count: 4, st: new Status(0, 0, 0.4f)), P(Kind.Beam, 34, range: 24, width: 1.5f, st: new Status(0, 0, 0.3f))) } },
             // Sleach line signature, proposed by Claude on 2026-11-05 and not yet approved.
-            { "sleach", new SignatureFusion { A = "blade-fan", B = "arc-lance", Def = F("storm-harpoon", "Storm Harpoon", "volt", 2.2f, "Signature fusion", "A sweep of blades, then a charged harpoon that pierces the whole line.",
-                P(Kind.Cone, 30, range: 9, arc: 1.3f, elem: "iron"), P(Kind.Beam, 38, range: 24, width: 1.4f, st: new Status(0, 0, 0.35f))) } },
+            { "sleach", new SignatureFusion { A = "harpoon-lance", B = "arc-lance", Def = F("storm-harpoon", "Storm Harpoon", "volt", 2.2f, "Signature fusion", "A steel harpoon pierces the whole line while lightning strikes several enemies.",
+                P(Kind.Lance, 40, range: 24, speed: 34, width: 1.3f, elem: "iron"), P(Kind.Smite, 30, range: 22, radius: 2.8f, count: 3, st: new Status(0, 0, 0.35f))) } },
             { "burrowkit", new SignatureFusion { A = "ember-shot", B = "flare-ring", Def = F("sunspire", "Sunspire", "fire", 2.4f, "Signature fusion", "A burst of flame, then a star of burning bolts in every direction.",
                 P(Kind.Nova, 46, radius: 8, knock: 8, st: new Status(5, 0, 0)), P(Kind.Bolt, 28, range: 24, speed: 26, count: 6, pierce: 2, spreadAll: true, st: new Status(4, 0, 0))) } },
             { "fugiri", new SignatureFusion { A = "droplet", B = "bubble-burst", Def = F("tidal-jet", "Tidal Jet", "water", 2.2f, "Signature fusion", "A whirlpool under the enemy and a stream of piercing jets.",
