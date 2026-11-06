@@ -93,6 +93,7 @@ namespace Swarmfall
             string first = Data.Elements[Elem].Name.ToUpper();
             if (Forms != null) return first + " · " + Forms.Length + " FORMS AT LV " + FormLevel;
             Stage dual = DualStage();
+            if (dual != null && Elem2 != null) return first + " / " + Data.Elements[Elem2].Name.ToUpper() + " · " + Data.Elements[dual.AddElem].Name.ToUpper() + " AT LV " + dual.Level;
             if (dual != null) return first + " · + " + Data.Elements[dual.AddElem].Name.ToUpper() + " AT LV " + dual.Level;
             return Elem2 != null ? first + " / " + Data.Elements[Elem2].Name.ToUpper() : first;
         }
@@ -298,6 +299,18 @@ namespace Swarmfall
                         Art = new Art { BodyX = 10, BodyY = 8, Head = 7, Ears = "horn", Main = 0x3a2c2b, Accent = 0xb09e86, Belly = 0xc8532a } },
                 } };
 
+        // Names, types and drawn sheets approved by the user (sheets from Codex). Two stages only, and Volt replaces
+        // Iron at Dealeach instead of becoming a third type. Stats, move, challenge, evolve level and signature fusion
+        // were proposed by Claude on 2026-11-05 and are not yet approved.
+        static readonly Partner Sleach =
+            new Partner { Id = "sleach", Name = "Sleach", Elem2 = "iron", ChallengeCounter = "guardians", ChallengeTarget = 4, ChallengeText = "Beat 4 guardians.", Role = "Lancer", Blurb = "A hunched seaweed kelpie with a steel harpoon horn that becomes a gold-masked sea serpent.", Elem = "basic", Move = "blade-fan", MaxHp = 105, Armor = 2,
+                Art = new Art { BodyX = 6, BodyY = 5, Head = 5, Ears = "horn", Tail = true, Main = 0x7aa89a, Accent = 0x9fb4c8, Belly = 0xb8d0c4 },
+                Evolutions = new[]
+                {
+                    new Stage { Id = "dealeach", Name = "Dealeach", Level = 16, Scale = 1.4f, AddElem = "volt", Gain = "Volt type replaces Iron, +45 max HP, +1 armor, +15% damage and +10% move speed", Stats = new[] { S("maxHp", 45), S("armor", 1), X("might", 0.15f), X("speed", 0.1f) },
+                        Art = new Art { BodyX = 8, BodyY = 6, Head = 6, Ears = "horn", Tail = true, Main = 0x9ee8d0, Accent = 0xe0b040, Belly = 0xc8f4e0, Angry = true } },
+                } };
+
         // Creatures that used to be offered in the first-launch window. A save that chose one keeps it as its starter.
         public static readonly string[] FormerStarters = { "burrowkit" };
 
@@ -387,6 +400,7 @@ namespace Swarmfall
             // The newer drawn creatures come first on the select screen, then the placeholder enemy creatures.
             all.Add(Furrowkit);
             all.Add(Slime());
+            all.Add(Sleach);
             all.Add(FromEnemy("skitter", "Scrapper", "A nimble pest that darts around throwing quick jabs.", "quick-jab", 1, 95, 1, 0, "kills", 500, "Get 500 knockouts in total."));
             all.Add(FromEnemy("spitter", "Sniper", "Sprays slowing bubbles from a safe distance.", "bubble-burst", 1.1f, 90, 0, 0, "runs", 3, "Play 3 runs."));
             all.Add(FromEnemy("sporeling", "Spreader", "Surrounds itself with a slowing cloud and heals as it goes.", "toxic-cloud", 1, 100, 0, 1, "bestLevel", 15, "Reach level 15 in a run."));
@@ -614,6 +628,9 @@ namespace Swarmfall
             // Chichar line signature, approved by the user on 2026-11-05.
             { "chichar", new SignatureFusion { A = "skyfall", B = "arc-lance", Def = F("canopy-storm", "Canopy Storm", "volt", 2.3f, "Signature fusion", "Strikes fall on several enemies while a long bolt pierces the whole line.",
                 P(Kind.Smite, 36, range: 22, radius: 3, count: 4, st: new Status(0, 0, 0.4f)), P(Kind.Beam, 34, range: 24, width: 1.5f, st: new Status(0, 0, 0.3f))) } },
+            // Sleach line signature, proposed by Claude on 2026-11-05 and not yet approved.
+            { "sleach", new SignatureFusion { A = "blade-fan", B = "arc-lance", Def = F("storm-harpoon", "Storm Harpoon", "volt", 2.2f, "Signature fusion", "A sweep of blades, then a charged harpoon that pierces the whole line.",
+                P(Kind.Cone, 30, range: 9, arc: 1.3f, elem: "iron"), P(Kind.Beam, 38, range: 24, width: 1.4f, st: new Status(0, 0, 0.35f))) } },
             { "burrowkit", new SignatureFusion { A = "ember-shot", B = "flare-ring", Def = F("sunspire", "Sunspire", "fire", 2.4f, "Signature fusion", "A burst of flame, then a star of burning bolts in every direction.",
                 P(Kind.Nova, 46, radius: 8, knock: 8, st: new Status(5, 0, 0)), P(Kind.Bolt, 28, range: 24, speed: 26, count: 6, pierce: 2, spreadAll: true, st: new Status(4, 0, 0))) } },
             { "fugiri", new SignatureFusion { A = "droplet", B = "bubble-burst", Def = F("tidal-jet", "Tidal Jet", "water", 2.2f, "Signature fusion", "A whirlpool under the enemy and a stream of piercing jets.",

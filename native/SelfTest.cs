@@ -137,7 +137,7 @@ namespace Swarmfall
             bool ok = true;
             foreach (Partner partner in Data.Partners)
             {
-                if (!partner.Starter && partner.Id != "skitter" && partner.Id != "burrowkit" && partner.Forms == null) continue;
+                if (!partner.Starter && partner.Id != "skitter" && partner.Id != "burrowkit" && partner.Id != "sleach" && partner.Forms == null) continue;
                 foreach (bool god in new[] { false, true })
                 {
                     ok &= PlayRun(partner, god, report);
@@ -291,7 +291,7 @@ namespace Swarmfall
                 run.Hud.Opts = null;
                 Player p = run.Player;
                 if (partner.Evolutions.Length == 0) continue;
-                ok &= Expect(p.Stages.Length == 3, partner.Name + " should have 3 stages", report);
+                ok &= Expect(p.Stages.Length == partner.Evolutions.Length + 1, partner.Name + " should have every stage", report);
                 float hpBefore = p.Stats.MaxHp;
                 foreach (Stage next in partner.Evolutions)
                 {
@@ -309,7 +309,7 @@ namespace Swarmfall
                 p.Level = 50;
                 run.State = GameState.Play;
                 Advance(run, 2);
-                ok &= Expect(p.StageIndex == 2, partner.Name + " should stop at its final stage", report);
+                ok &= Expect(p.StageIndex == partner.Evolutions.Length, partner.Name + " should stop at its final stage", report);
             }
             report.AppendLine("--- Evolution: all partners " + (ok ? "ok" : "FAILED"));
             return ok;
@@ -425,6 +425,20 @@ namespace Swarmfall
                 p.Stats.Crit = 0;
                 run.Blast(run.Enemies.X[i], 0, run.Enemies.Z[i], 2, 100, partner.Elem, 0xffffff, 0, default(Status), 0, p.SecondElem);
                 ok &= Expect(M.Abs(before - run.Enemies.Hp[i] - 200) < 1, p.Stage.Name + " blasts should choose its stronger second type", report);
+            }
+            // Sleach starts Basic/Iron; at Dealeach, Volt replaces Iron rather than adding a third type.
+            Partner sleach = Array.Find(Data.Partners, x => x.Id == "sleach");
+            ok &= Expect(sleach != null && sleach.Evolutions.Length == 1 && sleach.Evolutions[0].Name == "Dealeach", "Sleach should evolve once, into Dealeach", report);
+            if (sleach != null)
+            {
+                var srun = new Run();
+                srun.Start(sleach);
+                Player sp = srun.Player;
+                ok &= Expect(sp.Elem == "basic" && sp.SecondElem == "iron", "Sleach should be Basic/Iron", report);
+                sp.Evolve();
+                ok &= Expect(sp.Stage.Name == "Dealeach" && sp.Elem == "basic" && sp.SecondElem == "volt", "Dealeach should be Basic/Volt, with Volt replacing Iron", report);
+                ok &= Expect(sleach.TypeLine() == "BASIC / IRON · VOLT AT LV 16", "Sleach's type line should show the swap: " + sleach.TypeLine(), report);
+                ok &= Expect(Data.WildDef("sleach") != null && Data.Signature.ContainsKey("sleach"), "Sleach should be catchable and have a signature fusion", report);
             }
             Partner single = Array.Find(Data.Partners, x => x.Id == "skitter");
             ok &= Expect(single.DualStage() == null, "other lines should keep one type", report);

@@ -494,6 +494,7 @@ namespace Swarmfall
                 string line = "HP " + (int)p.MaxHp + " · Armor " + (int)p.Armor + " · Damage x" + p.Might.ToString("0.00") + " · Starts with " + Data.Move(p.Move).Name;
                 float more = Wrapped(small, line, tx, y + 72 + used, tw, Muted);
                 if (p.Forms != null) Label(small, "Changes form at Lv " + p.FormLevel, tx, y + 76 + used + more, Gold, 0, 1);
+                else if (p.Evolutions.Length == 1) Label(small, "Evolves at Lv " + p.Evolutions[0].Level, tx, y + 76 + used + more, Gold, 0, 0);
                 else if (p.Evolutions.Length > 0) Label(small, "Evolves at Lv " + p.Evolutions[0].Level + " and Lv " + p.Evolutions[p.Evolutions.Length - 1].Level, tx, y + 76 + used + more, Gold, 0, 0);
                 string modeText = run.Mode == GameMode.Survival ? "Mode: Survival (endless)" : "Mode: Classic (3 zones)";
                 if (Button(modeText, StartX, y + 14, StartW, 36, false))
