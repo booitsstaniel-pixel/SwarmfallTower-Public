@@ -69,6 +69,8 @@ namespace Swarmfall
                 goalX = run.Pickups.PortalX;
                 goalZ = run.Pickups.PortalZ;
                 hasGoal = true;
+                // The portal needs the interact key.
+                if (run.Pickups.NearPortal(p.X, p.Z) && frame % 10 == 0) Tap(Keys.E);
             }
             else
             {
@@ -148,6 +150,7 @@ namespace Swarmfall
             ok &= CheckEvolution(report);
             ok &= CheckCapture(report);
             ok &= CheckSave(report);
+            ok &= CheckPortalSwarm(report);
             ok &= CheckStarterChoice(report);
             ok &= CheckSlimeForms(report);
             ok &= CheckRoster(report);
@@ -215,6 +218,58 @@ namespace Swarmfall
                 return false;
             }
             return finished;
+        }
+
+        // Plays frames, answering any reward or level-up window with its first available card.
+        static void AdvanceChoosing(Run run, int frames)
+        {
+            for (int f = 0; f < frames; f++)
+            {
+                if (run.State == GameState.Choice && run.Hud.Opts != null)
+                {
+                    int i = run.Hud.Opts.Cards.FindIndex(c => !c.Disabled);
+                    if (i >= 0) run.Hud.ChooseCard(i);
+                    else run.Hud.CloseButton();
+                }
+                Advance(run, 1);
+            }
+        }
+
+        // After a guardian falls the portal opens and the final swarm keeps growing; only the interact key at the
+        // portal moves on to the next zone.
+        static bool CheckPortalSwarm(StringBuilder report)
+        {
+            bool ok = true;
+            var run = new Run();
+            run.Start(Data.Partners[0]);
+            run.GodMode = true;
+            run.Director.SummonGuardian(false);
+            Advance(run, 2);
+            int boss = run.Director.BossIndex();
+            ok &= Expect(boss >= 0, "a guardian should appear", report);
+            if (boss >= 0) run.DamageEnemy(boss, 1e9f, "basic", default(HitOpts));
+            AdvanceChoosing(run, 120);
+            ok &= Expect(run.Director.Phase == Phase.Swarm && run.Pickups.HasPortal, "beating the guardian should open the portal and start the final swarm, not " + run.Director.Phase, report);
+
+            Player p = run.Player;
+            p.X = run.Pickups.PortalX;
+            p.Z = run.Pickups.PortalZ;
+            AdvanceChoosing(run, 240);
+            ok &= Expect(run.Zone == 1 && run.Pickups.NearPortal(p.X, p.Z), "standing in the portal should not move on by itself", report);
+            int capEarly = run.Director.SpawnCap, countEarly = run.Enemies.Count;
+            AdvanceChoosing(run, 60 * 40);
+            p.X = run.Pickups.PortalX;
+            p.Z = run.Pickups.PortalZ;
+            int capLate = run.Director.SpawnCap, countLate = run.Enemies.Count;
+            ok &= Expect(capLate > capEarly + 100 && countLate > countEarly, "the final swarm should keep growing (cap " + capEarly + " -> " + capLate + ", enemies " + countEarly + " -> " + countLate + ")", report);
+
+            run.Input.KeyDown(Keys.E);
+            Advance(run, 1);
+            run.Input.KeyUp(Keys.E);
+            AdvanceChoosing(run, 30);
+            ok &= Expect(run.Zone == 2 && run.Director.Phase == Phase.Zone && !run.Pickups.HasPortal, "pressing E at the portal should go to zone 2", report);
+            report.AppendLine("--- Portal and final swarm: swarm cap " + capEarly + " -> " + capLate + ", enemies " + countEarly + " -> " + countLate + " " + (ok ? "ok" : "FAILED"));
+            return ok;
         }
 
         static void Advance(Run run, int frames)

@@ -31,7 +31,8 @@ F11 fullscreen. Q and C also turn the camera.
 ## How a run works
 
 Three zones, each on a large map with a 4-minute timer. The guardian arrives at 0:00, or earlier if you challenge
-it at the guardian stone for bonus gold. Beating it opens a portal. The third zone ends with a final boss.
+it at the guardian stone for bonus gold. Beating it opens a portal and starts the final swarm, which keeps growing
+until you reach the portal and press **E**. The third zone ends with a final boss.
 
 Level-ups offer move upgrades, new moves and vitamins, with limited Refresh, Skip and Banish uses. Items come from
 chests, the merchant and guardians, and most stack. Two level 8 moves can fuse at a fusion machine: the partner's

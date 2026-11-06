@@ -843,7 +843,8 @@ namespace Swarmfall
                 : d.Phase == Phase.Zone ? "Guardian at 0:00, or challenge it early"
                 : d.Phase == Phase.Guardian ? "Defeat the guardian"
                 : d.Phase == Phase.Final ? "Final battle"
-                : "Zone clear: walk into the portal";
+                : d.Phase == Phase.Swarm ? "Final swarm: reach the portal and press E"
+                : "Zone clear";
             Label(small, wave, cx, 80, Gold, 1);
             float wildDist = run.Capture.State == CaptureState.Roaming ? run.Capture.Distance() : -1;
             if (wildDist >= 0) Label(small, "Wild " + run.Capture.WildName + ": " + (int)wildDist + " m", cx, bossName != null ? 156 : 100, Mint, 1);
@@ -896,6 +897,7 @@ namespace Swarmfall
 
             // Prompts and messages.
             string prompt = run.Capture.Prompt();
+            if (prompt.Length == 0 && run.Pickups.NearPortal(run.Player.X, run.Player.Z)) prompt = "E: enter the portal to zone " + (run.Zone + 1);
             if (prompt.Length == 0) prompt = run.Encounters.Prompt();
             if (prompt.Length > 0) Pill(prompt, cx, h - 120, TextCol);
             if (toastT > 0) Pill(toastText, cx, h - 160, Gold);

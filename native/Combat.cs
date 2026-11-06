@@ -215,6 +215,14 @@ namespace Swarmfall
             Items.Add(new Drop { Kind = kind, X = x, Y = y + 0.6f, Z = z, Vx = M.Cos(a) * s, Vy = M.Range(3, 5.5f), Vz = M.Sin(a) * s, Value = value });
         }
 
+        // How close the player must be to use the portal with the interact key.
+        public const float PortalReach = 2.4f;
+
+        public bool NearPortal(float x, float z)
+        {
+            return HasPortal && M.Hypot(PortalX - x, PortalZ - z) < PortalReach;
+        }
+
         public void SpawnPortal(float x, float z)
         {
             HasPortal = true;

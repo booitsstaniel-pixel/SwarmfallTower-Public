@@ -3,9 +3,10 @@ using System.Collections.Generic;
 
 namespace Swarmfall
 {
-    enum Phase { Zone, Survive, Guardian, Final, Cleared }
+    enum Phase { Zone, Survive, Guardian, Final, Cleared, Swarm }
 
-    // Runs one zone: a horde that keeps growing, then a guardian, then a portal.
+    // Runs one zone: a horde that keeps growing, then a guardian, then a portal. While the portal is open the
+    // final swarm arrives and keeps growing until the player steps in and presses the interact key.
     // Earns spawn credits over time and spends them on enemy cards as packs around the player.
     // Also adapts how many enemies may be alive at once to the frame rate actually measured.
     sealed class Director
@@ -37,6 +38,9 @@ namespace Swarmfall
         public bool WildsAllowed { get { return Phase == Phase.Zone || Phase == Phase.Survive; } }
         public float T, Elapsed;
         float credits, eliteT;
+        // Seconds since the final swarm began, and the next time it announces that it has grown.
+        public float SwarmT;
+        float swarmToastT;
         public int BossUid;
         public EnemyDef BossDef;
 
@@ -59,6 +63,7 @@ namespace Swarmfall
             eliteT = EliteEvery;
             BossUid = 0;
             BossDef = null;
+            SwarmT = 0;
         }
 
         // Harder difficulties ease in over the first 90 seconds, so a run isn't lost before the first level-ups.
@@ -67,7 +72,12 @@ namespace Swarmfall
         float SurvivalLate { get { float t = run.Mode == GameMode.Survival ? Elapsed / 600 : 0; return t * t; } }
         float SurvivalHp { get { float t = run.Mode == GameMode.Survival ? Elapsed / 600 : 0; return t * t * t * 6; } }
         // The horde can't outgrow a new player's starting moves: the limit rises steadily from the start of a run.
-        int SpawnCap { get { return Math.Min(LiveCap, OpeningCap + (int)(run.Time * OpeningCapGrowth)); } }
+        // During the final swarm the limit keeps climbing as well.
+        public int SpawnCap { get { return Math.Min(LiveCap, OpeningCap + (int)(run.Time * OpeningCapGrowth) + (Phase == Phase.Swarm ? SwarmExtraCap + (int)(SwarmT * SwarmCapGrowth) : 0)); } }
+        // The final swarm: spawn credits arrive SwarmRate times faster at first, growing by SwarmRateGrowth every second.
+        const float SwarmRate = 1.6f, SwarmRateGrowth = 0.12f, SwarmCapGrowth = 4, SwarmToastEvery = 20;
+        const int SwarmExtraCap = 25;
+        float SwarmMult { get { return Phase == Phase.Swarm ? SwarmRate + SwarmT * SwarmRateGrowth : 1; } }
         public float CurrentHpMult { get { return HpMult; } }
         public float CurrentDmgMult { get { return DmgMult; } }
         float HpMult { get { return (1 + (run.Zone - 1) * 2.6f + Elapsed / Data.ZoneTime * 1.3f) * (1 + run.Heat * 0.5f) * Ramp(run.Diff.Hp) + SurvivalHp; } }
@@ -265,11 +275,22 @@ namespace Swarmfall
             if (Phase == Phase.Survive) UpdateSurvival(dt);
             if (run.Mode == GameMode.Survival) UpdateNight(dt);
 
+            if (Phase == Phase.Swarm)
+            {
+                SwarmT += dt;
+                if (SwarmT >= swarmToastT)
+                {
+                    swarmToastT += SwarmToastEvery;
+                    run.Hud.Toast("The swarm grows");
+                }
+            }
+
             // The horde thins out during boss fights but never stops.
             bool fighting = Phase == Phase.Guardian || Phase == Phase.Final;
-            credits = M.Min(60, credits + CreditRate * (fighting ? 0.45f : 1) * dt);
-            int guard = 0;
-            while (credits >= 1 && run.Enemies.Count < SpawnCap && guard++ < 6) SpawnPack();
+            float swarm = SwarmMult;
+            credits = M.Min(60 * swarm, credits + CreditRate * (fighting ? 0.45f : 1) * swarm * dt);
+            int guard = 0, packs = (int)(6 * swarm);
+            while (credits >= 1 && run.Enemies.Count < SpawnCap && guard++ < packs) SpawnPack();
 
             if (!fighting)
             {
@@ -337,12 +358,15 @@ namespace Swarmfall
                 });
                 return;
             }
-            Phase = Phase.Cleared;
+            Phase = Phase.Swarm;
+            SwarmT = 0;
+            swarmToastT = SwarmToastEvery;
             float x = run.Player.X + 6;
             float z = run.Player.Z;
             run.Terrain.PushOut(ref x, ref z, 2);
             pickups.SpawnPortal(x, z);
-            hud.Banner("Zone clear", "Finish up here, then walk into the portal");
+            hud.Banner("Zone clear", "The final swarm is coming: reach the portal and press E");
+            run.Audio.Alarm();
         }
 
         // Lowers the live enemy cap when frames drop, raises it again once they recover.

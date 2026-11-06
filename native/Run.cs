@@ -63,6 +63,8 @@ namespace Swarmfall
         public readonly List<Zone> Zones = new List<Zone>();
         readonly List<TimedAction> timers = new List<TimedAction>();
         readonly Queue<Func<Choice>> choices = new Queue<Func<Choice>>();
+        // Set when the player presses the interact key at the portal; travel happens once nothing is waiting.
+        bool enterPortal;
 
         public Terrain Terrain;
         public int TerrainVersion;
@@ -532,7 +534,11 @@ namespace Swarmfall
         {
             Time += dt;
             if (Input.Hit(Keys.R)) Player.Ultimate();
-            if (Input.Hit(Keys.E) && !Capture.TryThrow()) Encounters.Interact();
+            if (Input.Hit(Keys.E))
+            {
+                if (Pickups.NearPortal(Player.X, Player.Z)) enterPortal = true;
+                else if (!Capture.TryThrow()) Encounters.Interact();
+            }
 
             Player.Update(dt);
             Enemies.Update(dt);
@@ -569,8 +575,10 @@ namespace Swarmfall
             int target = Enemies.Nearest(Player.X, Player.Z, 20);
             TargetUid = target >= 0 ? Enemies.Uid[target] : 0;
 
-            if (Pickups.HasPortal && M.Hypot(Pickups.PortalX - Player.X, Pickups.PortalZ - Player.Z) < 2.4f && choices.Count == 0 && PendingLevels == 0)
+            if (!Pickups.NearPortal(Player.X, Player.Z)) enterPortal = false;
+            if (enterPortal && choices.Count == 0 && PendingLevels == 0)
             {
+                enterPortal = false;
                 LoadZone(Zone + 1);
                 return;
             }
