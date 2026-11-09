@@ -189,6 +189,19 @@ namespace Swarmfall
             }
         }
 
+        // A move-driven dash, like a slide that can't be hit, along (nx, nz) for this distance.
+        public void Dash(float nx, float nz, float dist, float speed)
+        {
+            SlideT = dist / speed;
+            SlideCd = M.Max(SlideCd, SlideT);
+            Iframes = M.Max(Iframes, SlideT + 0.15f);
+            // The slide's drag slows it down, so start faster to cover about the whole distance.
+            Vx = nx * speed * 1.35f;
+            Vz = nz * speed * 1.35f;
+            FacingX = nx;
+            FacingZ = nz;
+        }
+
         public void AddStat(string stat, bool mul, float amount)
         {
             // "power" is all damage (Might and Focus), "guard" is all defense (Armor and Will).

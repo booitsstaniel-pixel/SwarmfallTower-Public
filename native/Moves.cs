@@ -160,6 +160,7 @@ namespace Swarmfall
                 case Kind.Lob: return FireLob(run, m);
                 case Kind.Smite: return FireSmite(run, m);
                 case Kind.Vortex: return FireVortex(run, m);
+                case Kind.Charge: return FireCharge(run, m);
                 default: return false;
             }
         }
@@ -315,6 +316,32 @@ namespace Swarmfall
                 if (along > 0 && along < len && side < width + e.Radius[i]) run.DamageEnemy(i, dmg, m.Def.Elem, HitOpts.From(m.Def.St, t.Nx * 2, t.Nz * 2, m.Mods.Crit));
             });
             run.Vfx.BeamFx(p.X, p.Y + 1, p.Z, p.X + t.Nx * len, p.Y + 1, p.Z + t.Nz * len, ColorOf(m), width * 0.55f, 0.18f);
+            run.Audio.Zap();
+            return true;
+        }
+
+        // The player dashes through the nearest enemy. Everything along the path is hit at once, and the dash
+        // itself can't be hit. Area makes the path longer and wider.
+        static bool FireCharge(Run run, Move m)
+        {
+            Target t = Aim(run, m.Def.Elem, m.Def.Range);
+            if (t == null) return false;
+            Enemies e = run.Enemies;
+            Player p = run.Player;
+            float area = m.Mods.Area * p.Stats.Area;
+            float len = M.Min(t.D + 3, m.Def.Range * area);
+            float width = m.Def.Width * area;
+            float dmg = DamageOf(run, m);
+            e.Query(p.X + t.Nx * len / 2, p.Z + t.Nz * len / 2, len / 2 + width, i =>
+            {
+                float dx = e.X[i] - p.X;
+                float dz = e.Z[i] - p.Z;
+                float along = dx * t.Nx + dz * t.Nz;
+                float side = M.Abs(dx * t.Nz - dz * t.Nx);
+                if (along > -1 && along < len && side < width + e.Radius[i]) run.DamageEnemy(i, dmg, m.Def.Elem, HitOpts.From(m.Def.St, t.Nx * m.Def.Knock, t.Nz * m.Def.Knock, m.Mods.Crit));
+            });
+            p.Dash(t.Nx, t.Nz, len, m.Def.Speed);
+            run.Vfx.BeamFx(p.X, p.Y + 0.8f, p.Z, p.X + t.Nx * len, p.Y + 0.8f, p.Z + t.Nz * len, ColorOf(m), width * 0.45f, 0.22f);
             run.Audio.Zap();
             return true;
         }
@@ -663,7 +690,7 @@ namespace Swarmfall
             {
                 foreach (MoveDef d in Data.MoveList)
                 {
-                    if (player.Fused.Contains(d.Id) || banned.Contains("new:" + d.Id)) continue;
+                    if ((d.Signature != null && d.Signature != player.Stage.Id) || player.Fused.Contains(d.Id) || banned.Contains("new:" + d.Id)) continue;
                     if (player.Moves.Exists(m => m.Id == d.Id)) continue;
                     learnable.Add(d.Id);
                 }

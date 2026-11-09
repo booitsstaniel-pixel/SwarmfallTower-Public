@@ -607,7 +607,36 @@ namespace Swarmfall
             before = golem.Player.Hp;
             golem.Player.Hurt(20, true);
             ok &= Expect(M.Abs(before - golem.Player.Hp - 13) < 0.01f, "will should block a special hit", report);
-            report.AppendLine("--- Type chart: all matchups, immunity, bosses, dual types, physical and special " + (ok ? "ok" : "FAILED"));
+            // The four moves added on 2026-11-09.
+            Func<string, string, bool, bool> isMove = (id, elem, special) => { MoveDef md = Data.Move(id); return md.Elem == elem && md.Special == special; };
+            ok &= Expect(isMove("flame-claw", "fire", false) && isMove("sun-shot", "leaf", true) && isMove("zip-jab", "volt", false) && isMove("lightning-charge", "volt", false), "flame claw, sun shot, zip jab and lightning charge should have the asked-for type and category", report);
+
+            // Lightning Charge is only in Dealeach's pool of learnable moves.
+            var sleach = new Run();
+            sleach.Start(Array.Find(Data.Partners, x => x.Id == "sleach"));
+            Advance(sleach, 1);
+            Player sp = sleach.Player;
+            bool offered = false;
+            for (int i = 0; i < 300; i++) offered |= Upgrades.RollLevelCards(sp).Exists(c => c.Key == "new:lightning-charge");
+            ok &= Expect(!offered, "sleach should never be offered lightning charge", report);
+            sp.Evolve();
+            for (int i = 0; i < 300 && !offered; i++) offered |= Upgrades.RollLevelCards(sp).Exists(c => c.Key == "new:lightning-charge");
+            ok &= Expect(offered && sp.Moves.Count == 1, "dealeach should be offered lightning charge, not given it", report);
+            var charge = new Move("lightning-charge", Data.Move("lightning-charge"));
+            sp.Moves.Add(charge);
+            int dummy = sleach.Enemies.Spawn("skitter", sp.X + 5, sp.Z, 1000, 1);
+            float dummyHp = sleach.Enemies.Hp[dummy], startX = sp.X;
+            sp.Iframes = 0;
+            Advance(sleach, 1);
+            sp.Iframes = 0;
+            dummyHp = sleach.Enemies.Hp[dummy];
+            startX = sp.X;
+            ok &= Expect(Moves.Fire(sleach, charge), "lightning charge should find a target", report);
+            ok &= Expect(sleach.Enemies.Hp[dummy] < dummyHp, "lightning charge should hit the enemy in its path", report);
+            ok &= Expect(sp.Iframes > 0, "dealeach should be unhittable while charging", report);
+            Advance(sleach, 24);
+            ok &= Expect(sp.X - startX > 3, "lightning charge should carry dealeach forward", report);
+            report.AppendLine("--- Type chart: all matchups, immunity, bosses, dual types, physical and special, new moves " + (ok ? "ok" : "FAILED"));
             return ok;
         }
 

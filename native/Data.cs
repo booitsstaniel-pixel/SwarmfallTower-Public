@@ -9,7 +9,7 @@ namespace Swarmfall
         public const int Flying = 1, Shooter = 2, Charger = 4, Elite = 8, Boss = 16, Wild = 32, Downed = 64, Captive = 128;
     }
 
-    enum Kind { Bolt, Barrage, Boomerang, Nova, Cone, Beam, Lob, Smite, Vortex, Orbit, Aura, Fusion, Lance }
+    enum Kind { Bolt, Barrage, Boomerang, Nova, Cone, Beam, Lob, Smite, Vortex, Orbit, Aura, Fusion, Lance, Charge }
 
     struct Status
     {
@@ -128,6 +128,8 @@ namespace Swarmfall
         public bool SpreadAll, Glitch;
         public Status St;
         public MoveDef[] Parts;
+        // Only this stage can be offered this signature move. Null means anyone can learn it.
+        public string Signature;
         // Level-up upgrades this move can roll, in place of the usual ones for its kind (see Upgrades.PoolOf).
         public string[] Pool;
     }
@@ -313,7 +315,7 @@ namespace Swarmfall
                 Art = new Art { BodyX = 6, BodyY = 5, Head = 5, Ears = "horn", Tail = true, Main = 0x7aa89a, Accent = 0x9fb4c8, Belly = 0xb8d0c4 },
                 Evolutions = new[]
                 {
-                    new Stage { Id = "dealeach", Name = "Dealeach", Level = 16, Scale = 1.4f, AddElem = "volt", Gain = "Volt type replaces Iron, +45 max HP, +1 armor, +2 will, +15% might, +10% focus and +10% move speed", Stats = new[] { S("maxHp", 45), S("armor", 1), S("will", 2), X("might", 0.15f), X("focus", 0.1f), X("speed", 0.1f) },
+                    new Stage { Id = "dealeach", Name = "Dealeach", Level = 16, Scale = 1.4f, AddElem = "volt", Gain = "Volt type replaces Iron, Lightning Charge can be learned, +45 max HP, +1 armor, +2 will, +15% might, +10% focus and +10% move speed", Stats = new[] { S("maxHp", 45), S("armor", 1), S("will", 2), X("might", 0.15f), X("focus", 0.1f), X("speed", 0.1f) },
                         Art = new Art { BodyX = 8, BodyY = 6, Head = 6, Ears = "horn", Tail = true, Main = 0x9ee8d0, Accent = 0xe0b040, Belly = 0xc8f4e0, Angry = true } },
                 } };
 
@@ -451,15 +453,21 @@ namespace Swarmfall
         {
             new MoveDef { Id = "ember-shot", Name = "Ember Shot", Elem = "fire", Special = Spec, Kind = Kind.Bolt, Cd = 0.75f, Dmg = 9, Range = 19, Speed = 22, St = new Status(3, 0, 0), Desc = "Fires burning bolts at the nearest enemy." },
             new MoveDef { Id = "flare-ring", Name = "Flare Ring", Elem = "fire", Special = Spec, Kind = Kind.Nova, Cd = 3.2f, Dmg = 16, Radius = 6.5f, St = new Status(4, 0, 0), Knock = 7, Desc = "A blast of fire around you that throws enemies back." },
+            // Added 2026-11-09 at the user's request (names and categories from the user, numbers from Claude).
+            new MoveDef { Id = "flame-claw", Name = "Flame Claw", Elem = "fire", Special = Phys, Kind = Kind.Cone, Cd = 0.9f, Dmg = 15, Range = 5, Arc = 1.6f, St = new Status(2, 0, 0), Desc = "Rakes nearby enemies with burning claws." },
             new MoveDef { Id = "fire-fan", Name = "Fire Fan", Elem = "fire", Special = Spec, Kind = Kind.Cone, Cd = 1.6f, Dmg = 12, Range = 8, Arc = 1.1f, St = new Status(3, 0, 0), Desc = "Sweeps a wide cone of flame." },
             new MoveDef { Id = "droplet", Name = "Droplet", Elem = "water", Special = Spec, Kind = Kind.Bolt, Cd = 0.7f, Dmg = 8, Range = 19, Speed = 20, Pierce = 1, Desc = "Fast water shots that pass through one enemy." },
             new MoveDef { Id = "bubble-burst", Name = "Bubble Burst", Elem = "water", Special = Spec, Kind = Kind.Barrage, Cd = 2.4f, Dmg = 7, Range = 16, Speed = 13, Count = 4, Spread = 0.42f, St = new Status(0, 1.5f, 0), Desc = "A rapid spray of slowing bubbles." },
             new MoveDef { Id = "riptide", Name = "Riptide", Elem = "water", Special = Phys, Kind = Kind.Vortex, Cd = 6, Dmg = 6, Range = 17, Radius = 5, Dur = 2.8f, Desc = "A whirlpool that drags enemies in and grinds them down." },
             new MoveDef { Id = "razor-seed", Name = "Razor Seed", Elem = "leaf", Special = Phys, Kind = Kind.Boomerang, Cd = 1.15f, Dmg = 10, Range = 13, Speed = 15, Desc = "A spinning seed that flies out and comes back." },
             new MoveDef { Id = "thorn-orbit", Name = "Thorn Orbit", Elem = "leaf", Special = Phys, Kind = Kind.Orbit, Cd = 0.3f, Dmg = 6, Radius = 3.6f, Count = 2, Spin = 2.8f, Desc = "Thorns circle you and cut anything they touch." },
+            new MoveDef { Id = "sun-shot", Name = "Sun Shot", Elem = "leaf", Special = Spec, Kind = Kind.Beam, Cd = 2.6f, Dmg = 24, Range = 22, Width = 1.2f, Desc = "Gathers sunlight and fires it as a long beam through every enemy in line." },
             new MoveDef { Id = "spore-cloud", Name = "Spore Cloud", Elem = "leaf", Special = Spec, Kind = Kind.Aura, Cd = 0.55f, Dmg = 4, Radius = 4.8f, St = new Status(0, 0.8f, 0), Desc = "A cloud around you that slows and poisons." },
             new MoveDef { Id = "arc-lance", Name = "Arc Lance", Elem = "volt", Special = Spec, Kind = Kind.Beam, Cd = 1.9f, Dmg = 18, Range = 18, Width = 1.1f, St = new Status(0, 0, 0.25f), Desc = "A straight bolt that hits everything in line." },
             new MoveDef { Id = "skyfall", Name = "Skyfall", Elem = "volt", Special = Spec, Kind = Kind.Smite, Cd = 2.3f, Dmg = 21, Range = 18, Radius = 2.5f, Count = 2, St = new Status(0, 0, 0.4f), Desc = "Lightning strikes random enemies after a short warning." },
+            new MoveDef { Id = "zip-jab", Name = "Zip Jab", Elem = "volt", Special = Phys, Kind = Kind.Bolt, Cd = 0.5f, Dmg = 6, Range = 13, Speed = 32, St = new Status(0, 0, 0.12f), Desc = "Lightning-quick jabs at the nearest enemy that stun it for a moment." },
+            // Dealeach's signature move, only offered at that stage: a dash through the nearest enemy that hits everything on the way and can't be hit.
+            new MoveDef { Id = "lightning-charge", Name = "Lightning Charge", Elem = "volt", Special = Phys, Signature = "dealeach", Kind = Kind.Charge, Cd = 3.2f, Dmg = 34, Range = 10, Width = 1.4f, Speed = 34, Knock = 6, St = new Status(0, 0, 0.3f), Pool = new[] { "dmg", "cd", "area" }, Desc = "Dealeach's signature. Charges through the nearest enemy, striking everything in its path, and can't be hit while charging." },
             new MoveDef { Id = "boulder-lob", Name = "Boulder Lob", Elem = "stone", Special = Phys, Kind = Kind.Lob, Cd = 2.2f, Dmg = 26, Range = 16, Radius = 3.6f, Knock = 8, Desc = "Lobs a rock that explodes where it lands." },
             new MoveDef { Id = "shard-orbit", Name = "Shard Orbit", Elem = "stone", Special = Phys, Kind = Kind.Orbit, Cd = 0.4f, Dmg = 11, Radius = 5, Spin = 1.8f, Desc = "A heavy shard swings around you at long reach." },
             new MoveDef { Id = "hex-smite", Name = "Hex Smite", Elem = "spirit", Special = Spec, Kind = Kind.Smite, Cd = 3, Dmg = 30, Range = 20, Radius = 3.2f, Desc = "Curses the ground under one enemy for heavy damage." },
