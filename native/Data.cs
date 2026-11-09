@@ -21,6 +21,8 @@ namespace Swarmfall
     {
         public string Name;
         public uint Color;
+        // Special types use Focus to hit and Will to defend. Physical types use Might and Armor.
+        public bool Special;
         public string[] Strong = new string[0], Weak = new string[0], Immune = new string[0];
     }
 
@@ -59,7 +61,8 @@ namespace Swarmfall
     sealed class Partner
     {
         public string Id, Name, Role, Blurb, Elem, Elem2, Move;
-        public float Might = 1, MaxHp = 100, Armor, Regen, Magnet = 4.5f;
+        // Might and Armor cover physical types, Focus and Will cover special types (see Element.Special).
+        public float Might = 1, Focus = 1, MaxHp = 100, Armor, Will, Regen, Magnet = 4.5f;
         public Art Art;
         public Stage[] Evolutions = new Stage[0];
         // Starters are offered in the first-launch window. You pick one, and every other creature
@@ -208,14 +211,14 @@ namespace Swarmfall
 
         public static readonly Dictionary<string, Element> Elements = new Dictionary<string, Element>
         {
-            { "fire", new Element { Name = "Flame", Color = 0xff7a3c, Strong = new[] { "leaf", "iron", "spirit" }, Weak = new[] { "fire", "water", "stone" } } },
-            { "water", new Element { Name = "Tide", Color = 0x46b8ff, Strong = new[] { "fire", "stone", "iron" }, Weak = new[] { "water", "leaf" } } },
-            { "leaf", new Element { Name = "Bloom", Color = 0x6fdc5a, Strong = new[] { "water", "stone" }, Weak = new[] { "fire", "leaf", "iron" } } },
-            { "volt", new Element { Name = "Volt", Color = 0xffd93b, Strong = new[] { "water", "iron" }, Weak = new[] { "leaf", "volt" }, Immune = new[] { "stone" } } },
+            { "fire", new Element { Name = "Flame", Special = true, Color = 0xff7a3c, Strong = new[] { "leaf", "iron", "spirit" }, Weak = new[] { "fire", "water", "stone" } } },
+            { "water", new Element { Name = "Tide", Special = true, Color = 0x46b8ff, Strong = new[] { "fire", "stone", "iron" }, Weak = new[] { "water", "leaf" } } },
+            { "leaf", new Element { Name = "Bloom", Special = true, Color = 0x6fdc5a, Strong = new[] { "water", "stone" }, Weak = new[] { "fire", "leaf", "iron" } } },
+            { "volt", new Element { Name = "Volt", Special = true, Color = 0xffd93b, Strong = new[] { "water", "iron" }, Weak = new[] { "leaf", "volt" }, Immune = new[] { "stone" } } },
             { "stone", new Element { Name = "Stone", Color = 0xc9a06a, Strong = new[] { "fire", "volt", "venom" }, Weak = new[] { "leaf", "iron" }, Immune = new[] { "spirit" } } },
             { "iron", new Element { Name = "Iron", Color = 0x9fb4c8, Strong = new[] { "leaf", "stone", "spirit" }, Weak = new[] { "fire", "water", "volt", "iron" } } },
             { "venom", new Element { Name = "Venom", Color = 0xb04fd0, Strong = new[] { "water", "leaf", "basic" }, Weak = new[] { "stone", "venom", "spirit" }, Immune = new[] { "iron" } } },
-            { "spirit", new Element { Name = "Spirit", Color = 0xb98cff, Strong = new[] { "volt", "venom", "spirit" }, Weak = new[] { "fire", "iron" }, Immune = new[] { "basic" } } },
+            { "spirit", new Element { Name = "Spirit", Special = true, Color = 0xb98cff, Strong = new[] { "volt", "venom", "spirit" }, Weak = new[] { "fire", "iron" }, Immune = new[] { "basic" } } },
             { "basic", new Element { Name = "Basic", Color = 0xcfc9b8, Weak = new[] { "stone", "iron" }, Immune = new[] { "spirit" } } },
         };
 
@@ -223,6 +226,13 @@ namespace Swarmfall
         {
             Element e;
             return elem != null && Elements.TryGetValue(elem, out e) ? e.Color : 0xffffff;
+        }
+
+        // Physical types are Stone, Iron, Venom and Basic. Untyped damage counts as physical.
+        public static bool IsSpecial(string elem)
+        {
+            Element e;
+            return elem != null && Elements.TryGetValue(elem, out e) && e.Special;
         }
 
         // A creature with two types uses whichever works better against this target.
@@ -257,32 +267,32 @@ namespace Swarmfall
         {
             // Names, types and sprites approved by the user; drawn sheets from Codex. Stats, move, challenge and
             // signature fusion were proposed by Claude and approved by the user on 2026-11-05.
-            new Partner { Id = "chichar", Name = "Chichar", ChallengeCounter = "kills", ChallengeTarget = 300, ChallengeText = "Get 300 knockouts in total.", Role = "Trickster", Blurb = "A tiny fan-eared marmoset that grows into a lean, fanged loris.", Elem = "volt", Move = "skyfall", MaxHp = 95, Armor = 0,
+            new Partner { Id = "chichar", Name = "Chichar", ChallengeCounter = "kills", ChallengeTarget = 300, ChallengeText = "Get 300 knockouts in total.", Role = "Trickster", Blurb = "A tiny fan-eared marmoset that grows into a lean, fanged loris.", Elem = "volt", Move = "skyfall", MaxHp = 95, Armor = 0, Will = 1,
                 Art = new Art { BodyX = 4, BodyY = 4, Head = 5, Ears = "round", Tail = true, Main = 0xe2c27a, Accent = 0x7a4ab0, Belly = 0xf0dcae },
                 Evolutions = new[]
                 {
-                    new Stage { Id = "bijiban", Name = "Bijiban", Level = 10, Scale = 1.2f, Gain = "+25 max HP, +1 armor, +10% damage and +5% attack speed", Stats = new[] { S("maxHp", 25), S("armor", 1), X("might", 0.1f), X("haste", 0.05f) },
+                    new Stage { Id = "bijiban", Name = "Bijiban", Level = 10, Scale = 1.2f, Gain = "+25 max HP, +1 armor, +1 will, +10% focus and +5% attack speed", Stats = new[] { S("maxHp", 25), S("armor", 1), S("will", 1), X("focus", 0.1f), X("haste", 0.05f) },
                         Art = new Art { BodyX = 5, BodyY = 6, Head = 5, Ears = "round", Tail = true, Main = 0xd8b46a, Accent = 0x7a4ab0, Belly = 0xecd4a0 } },
-                    new Stage { Id = "chamzahar", Name = "Chamzahar", Level = 22, Scale = 1.5f, AddElem = "venom", Gain = "Gains Venom type, +50 max HP, +2 armor and +15% damage", Stats = new[] { S("maxHp", 50), S("armor", 2), X("might", 0.15f) },
+                    new Stage { Id = "chamzahar", Name = "Chamzahar", Level = 22, Scale = 1.5f, AddElem = "venom", Gain = "Gains Venom type, +50 max HP, +2 armor, +2 will, +10% focus and +15% might", Stats = new[] { S("maxHp", 50), S("armor", 2), S("will", 2), X("focus", 0.1f), X("might", 0.15f) },
                         Art = new Art { BodyX = 6, BodyY = 8, Head = 6, Ears = "round", Tail = true, Main = 0xc8a060, Accent = 0x6a3aa0, Belly = 0xe0c890, Angry = true } },
                 } },
-            new Partner { Id = "fugiri", Name = "Fugiri", ChallengeCounter = "guardians", ChallengeTarget = 2, ChallengeText = "Beat 2 guardians.", Role = "Drifter", Blurb = "Timid little puffer fish that hardens into a spiked metal sphere.", Elem = "water", Move = "droplet", MaxHp = 100, Armor = 1,
+            new Partner { Id = "fugiri", Name = "Fugiri", ChallengeCounter = "guardians", ChallengeTarget = 2, ChallengeText = "Beat 2 guardians.", Role = "Drifter", Blurb = "Timid little puffer fish that hardens into a spiked metal sphere.", Elem = "water", Move = "droplet", MaxHp = 100, Armor = 1, Will = 1,
                 Art = new Art { BodyX = 8, BodyY = 7, Head = 6, Legs = 0, Tail = true, Main = 0x2c2c6e, Accent = 0xf0c040, Belly = 0xf0e8c8 },
                 Evolutions = new[]
                 {
-                    new Stage { Id = "yugiri", Name = "Yugiri", Level = 10, Scale = 1.25f, Gain = "+30 max HP, +3 armor and +5% damage", Stats = new[] { S("maxHp", 30), S("armor", 3), X("might", 0.05f) },
+                    new Stage { Id = "yugiri", Name = "Yugiri", Level = 10, Scale = 1.25f, Gain = "+30 max HP, +3 armor, +2 will and +5% focus", Stats = new[] { S("maxHp", 30), S("armor", 3), S("will", 2), X("focus", 0.05f) },
                         Art = new Art { BodyX = 10, BodyY = 8, Head = 7, Ears = "horn", Legs = 0, Tail = true, Main = 0x3a3a44, Accent = 0xe8d9b0, Belly = 0xf0c040 } },
-                    new Stage { Id = "yuninjo", Name = "Yuninjo", Level = 22, Scale = 1.6f, AddElem = "iron", Gain = "Gains Iron type, +60 max HP, +6 armor and +10% damage, but -10% speed", Stats = new[] { S("maxHp", 60), S("armor", 6), X("might", 0.1f), X("speed", -0.1f) },
+                    new Stage { Id = "yuninjo", Name = "Yuninjo", Level = 22, Scale = 1.6f, AddElem = "iron", Gain = "Gains Iron type, +60 max HP, +6 armor, +4 will, +10% focus and +10% might, but -10% speed", Stats = new[] { S("maxHp", 60), S("armor", 6), S("will", 4), X("focus", 0.1f), X("might", 0.1f), X("speed", -0.1f) },
                         Art = new Art { BodyX = 12, BodyY = 10, Head = 7, Ears = "horn", Legs = 0, Main = 0x2a1a3a, Accent = 0x5a3a70, Belly = 0x2a1a3a, Angry = true } },
                 } },
             // Sprites from Codex, stored under these IDs.
-            new Partner { Id = "golem-stage-i", Name = "Toyat", ChallengeCounter = "evolutions", ChallengeTarget = 3, ChallengeText = "Evolve 3 times.", Role = "Guardian", Blurb = "A little stone sprite bound by vines that grows into a living temple.", Elem = "stone", Move = "razor-seed", MaxHp = 115, Armor = 1, Regen = 0.6f,
+            new Partner { Id = "golem-stage-i", Name = "Toyat", ChallengeCounter = "evolutions", ChallengeTarget = 3, ChallengeText = "Evolve 3 times.", Role = "Guardian", Blurb = "A little stone sprite bound by vines that grows into a living temple.", Elem = "stone", Move = "razor-seed", MaxHp = 115, Armor = 1, Will = 1, Regen = 0.6f,
                 Art = new Art { BodyX = 6, BodyY = 6, Head = 6, Ears = "leaf", Main = 0xb0a68c, Accent = 0x6fdc5a, Belly = 0x8a8068 },
                 Evolutions = new[]
                 {
-                    new Stage { Id = "golem-stage-ii", Name = "Eytetl", Level = 10, Scale = 1.25f, Gain = "+30 max HP, +2 armor and +0.4 HP regen", Stats = new[] { S("maxHp", 30), S("armor", 2), S("regen", 0.4f) },
+                    new Stage { Id = "golem-stage-ii", Name = "Eytetl", Level = 10, Scale = 1.25f, Gain = "+30 max HP, +2 armor, +1 will and +0.4 HP regen", Stats = new[] { S("maxHp", 30), S("armor", 2), S("will", 1), S("regen", 0.4f) },
                         Art = new Art { BodyX = 9, BodyY = 8, Head = 6, Main = 0xb0a68c, Accent = 0x5aa83c, Belly = 0x8a8068 } },
-                    new Stage { Id = "golem-stage-iii", Name = "Xutetl", Level = 22, Scale = 1.6f, AddElem = "leaf", Gain = "Gains Bloom type, +60 max HP, +4 armor and +10% damage, but -10% speed", Stats = new[] { S("maxHp", 60), S("armor", 4), S("regen", 0.6f), X("might", 0.1f), X("speed", -0.1f) },
+                    new Stage { Id = "golem-stage-iii", Name = "Xutetl", Level = 22, Scale = 1.6f, AddElem = "leaf", Gain = "Gains Bloom type, +60 max HP, +4 armor, +3 will and +10% focus, but -10% speed", Stats = new[] { S("maxHp", 60), S("armor", 4), S("will", 3), S("regen", 0.6f), X("focus", 0.1f), X("speed", -0.1f) },
                         Art = new Art { BodyX = 12, BodyY = 9, Head = 8, Ears = "round", Tail = true, Main = 0x4a7a34, Accent = 0xb0a68c, Belly = 0x3a5a2a } },
                 } },
         };
@@ -291,13 +301,13 @@ namespace Swarmfall
         // picked it as their starter keep it (see FormerStarters). Drawn sprites from Codex under these older IDs;
         // keep the IDs, because saves use them.
         static readonly Partner Furrowkit =
-            new Partner { Id = "burrowkit", Name = "Furrowkit", ChallengeCounter = "runs", ChallengeTarget = 5, ChallengeText = "Play 5 runs.", Role = "Digger", Blurb = "Quick little digger that grows into a huge rock-clawed tunneller.", Elem = "fire", Move = "ember-shot", MaxHp = 105, Armor = 1,
+            new Partner { Id = "burrowkit", Name = "Furrowkit", ChallengeCounter = "runs", ChallengeTarget = 5, ChallengeText = "Play 5 runs.", Role = "Digger", Blurb = "Quick little digger that grows into a huge rock-clawed tunneller.", Elem = "fire", Move = "ember-shot", MaxHp = 105, Armor = 1, Will = 1,
                 Art = new Art { BodyX = 5, BodyY = 4, Head = 5, Ears = "point", Tail = true, Main = 0xe08a3c, Accent = 0xb09e86, Belly = 0xecd9b2 },
                 Evolutions = new[]
                 {
-                    new Stage { Id = "burrower", Name = "Burrowbat", Level = 10, Scale = 1.2f, Gain = "+25 max HP, +2 armor and +10% damage", Stats = new[] { S("maxHp", 25), S("armor", 2), X("might", 0.1f) },
+                    new Stage { Id = "burrower", Name = "Burrowbat", Level = 10, Scale = 1.2f, Gain = "+25 max HP, +2 armor, +2 will and +10% focus", Stats = new[] { S("maxHp", 25), S("armor", 2), S("will", 2), X("focus", 0.1f) },
                         Art = new Art { BodyX = 7, BodyY = 5, Head = 6, Ears = "point", Tail = true, Main = 0xc8562b, Accent = 0xb09e86, Belly = 0xebd7b0 } },
-                    new Stage { Id = "stonehog", Name = "Borrog", Level = 22, Scale = 1.5f, AddElem = "stone", Gain = "Gains Stone type, +60 max HP, +4 armor and +15% damage, but -10% move speed", Stats = new[] { S("maxHp", 60), S("armor", 4), X("might", 0.15f), X("speed", -0.1f) },
+                    new Stage { Id = "stonehog", Name = "Borrog", Level = 22, Scale = 1.5f, AddElem = "stone", Gain = "Gains Stone type, +60 max HP, +4 armor, +2 will, +10% focus and +15% might, but -10% move speed", Stats = new[] { S("maxHp", 60), S("armor", 4), S("will", 2), X("focus", 0.1f), X("might", 0.15f), X("speed", -0.1f) },
                         Art = new Art { BodyX = 10, BodyY = 8, Head = 7, Ears = "horn", Main = 0x3a2c2b, Accent = 0xb09e86, Belly = 0xc8532a } },
                 } };
 
@@ -305,11 +315,11 @@ namespace Swarmfall
         // Iron at Dealeach instead of becoming a third type. Stats, move, challenge, evolve level and signature fusion
         // were proposed by Claude on 2026-11-05 and are not yet approved.
         static readonly Partner Sleach =
-            new Partner { Id = "sleach", Name = "Sleach", Elem2 = "iron", ChallengeCounter = "guardians", ChallengeTarget = 4, ChallengeText = "Beat 4 guardians.", Role = "Lancer", Blurb = "A hunched seaweed kelpie with a steel harpoon horn that becomes a gold-masked sea serpent.", Elem = "basic", Move = "harpoon-lance", MaxHp = 105, Armor = 2,
+            new Partner { Id = "sleach", Name = "Sleach", Elem2 = "iron", ChallengeCounter = "guardians", ChallengeTarget = 4, ChallengeText = "Beat 4 guardians.", Role = "Lancer", Blurb = "A hunched seaweed kelpie with a steel harpoon horn that becomes a gold-masked sea serpent.", Elem = "basic", Move = "harpoon-lance", MaxHp = 105, Armor = 2, Will = 1,
                 Art = new Art { BodyX = 6, BodyY = 5, Head = 5, Ears = "horn", Tail = true, Main = 0x7aa89a, Accent = 0x9fb4c8, Belly = 0xb8d0c4 },
                 Evolutions = new[]
                 {
-                    new Stage { Id = "dealeach", Name = "Dealeach", Level = 16, Scale = 1.4f, AddElem = "volt", Gain = "Volt type replaces Iron, +45 max HP, +1 armor, +15% damage and +10% move speed", Stats = new[] { S("maxHp", 45), S("armor", 1), X("might", 0.15f), X("speed", 0.1f) },
+                    new Stage { Id = "dealeach", Name = "Dealeach", Level = 16, Scale = 1.4f, AddElem = "volt", Gain = "Volt type replaces Iron, +45 max HP, +1 armor, +2 will, +15% might, +10% focus and +10% move speed", Stats = new[] { S("maxHp", 45), S("armor", 1), S("will", 2), X("might", 0.15f), X("focus", 0.1f), X("speed", 0.1f) },
                         Art = new Art { BodyX = 8, BodyY = 6, Head = 6, Ears = "horn", Tail = true, Main = 0x9ee8d0, Accent = 0xe0b040, Belly = 0xc8f4e0, Angry = true } },
                 } };
 
@@ -321,7 +331,7 @@ namespace Swarmfall
         {
             switch (elem)
             {
-                case "fire": return new AllyBonus { Stat = X("might", 0.08f), Text = "+8% damage" };
+                case "fire": return new AllyBonus { Stat = X("focus", 0.08f), Text = "+8% focus" };
                 case "water": return new AllyBonus { Stat = S("maxHp", 25), Text = "+25 max HP" };
                 case "leaf": return new AllyBonus { Stat = S("regen", 0.8f), Text = "+0.8 HP regen" };
                 case "volt": return new AllyBonus { Stat = X("haste", 0.08f), Text = "+8% attack speed" };
@@ -329,6 +339,7 @@ namespace Swarmfall
                 case "iron": return new AllyBonus { Stat = S("critDmg", 0.2f), Text = "+20% crit damage" };
                 case "venom": return new AllyBonus { Stat = X("area", 0.08f), Text = "+8% attack area" };
                 case "basic": return new AllyBonus { Stat = X("speed", 0.06f), Text = "+6% move speed" };
+                case "spirit": return new AllyBonus { Stat = S("will", 3), Text = "+3 will" };
                 default: return new AllyBonus { Stat = S("crit", 0.05f), Text = "+5% crit chance" };
             }
         }
@@ -353,12 +364,12 @@ namespace Swarmfall
         };
 
         public static readonly EnemyDef FinalBoss = new EnemyDef { Id = "tower-warden", Name = "The Warden", Elem = "stone", Elem2 = "iron", Hp = 2600, Speed = 3.8f, Dmg = 32, Size = 8, Xp = 200, Art = new Art { BodyX = 10, BodyY = 9, Head = 8, Ears = "horn", Wings = true, Tail = true, Main = 0x3d3a52, Accent = 0xffd24a, Angry = true } };
-        static Partner FromEnemy(string id, string role, string blurb, string move, float might, float maxHp, float armor, float regen, string counter, long target, string text)
+        static Partner FromEnemy(string id, string role, string blurb, string move, float might, float focus, float maxHp, float armor, float will, float regen, string counter, long target, string text)
         {
             foreach (EnemyDef e in Enemies)
             {
                 if (e.Id != id) continue;
-                return new Partner { Id = id, Name = e.Name, Role = role, Blurb = blurb, Elem = e.Elem, Elem2 = e.Elem2, Move = move, Might = might, MaxHp = maxHp, Armor = armor, Regen = regen, Art = e.Art, ChallengeCounter = counter, ChallengeTarget = target, ChallengeText = text };
+                return new Partner { Id = id, Name = e.Name, Role = role, Blurb = blurb, Elem = e.Elem, Elem2 = e.Elem2, Move = move, Might = might, Focus = focus, MaxHp = maxHp, Armor = armor, Will = will, Regen = regen, Art = e.Art, ChallengeCounter = counter, ChallengeTarget = target, ChallengeText = text };
             }
             throw new ArgumentException(id);
         }
@@ -366,9 +377,10 @@ namespace Swarmfall
         // Sprites from Codex. Names approved by the user; gameplay numbers remain proposals.
         static Stage SlimeForm(string id, string name, string elem, uint main, uint accent)
         {
+            bool special = IsSpecial(elem);
             return new Stage { Id = id, Name = name, Elem = elem, Level = SlimeFormLevel, Scale = 1.35f,
-                Gain = "Becomes " + Elements[elem].Name + " type, +45 max HP, +2 armor and +15% damage",
-                Stats = new[] { S("maxHp", 45), S("armor", 2), X("might", 0.15f) },
+                Gain = "Becomes " + Elements[elem].Name + " type, +45 max HP, " + (special ? "+1 armor, +3 will and +15% focus" : "+3 armor, +1 will and +15% might"),
+                Stats = new[] { S("maxHp", 45), S("armor", special ? 1 : 3), S("will", special ? 3 : 1), X(special ? "focus" : "might", 0.15f) },
                 Art = new Art { BodyX = 8, BodyY = 6, Head = 5, Legs = 0, Main = main, Accent = accent, Belly = main } };
         }
 
@@ -403,14 +415,14 @@ namespace Swarmfall
             all.Add(Furrowkit);
             all.Add(Slime());
             all.Add(Sleach);
-            all.Add(FromEnemy("skitter", "Scrapper", "A nimble pest that darts around throwing quick jabs.", "quick-jab", 1, 95, 1, 0, "kills", 500, "Get 500 knockouts in total."));
-            all.Add(FromEnemy("spitter", "Sniper", "Sprays slowing bubbles from a safe distance.", "bubble-burst", 1.1f, 90, 0, 0, "runs", 3, "Play 3 runs."));
-            all.Add(FromEnemy("sporeling", "Spreader", "Surrounds itself with a slowing cloud and heals as it goes.", "toxic-cloud", 1, 100, 0, 1, "bestLevel", 15, "Reach level 15 in a run."));
-            all.Add(FromEnemy("wisp", "Curser", "Curses the ground under single targets for heavy damage.", "hex-smite", 1.15f, 85, 0, 0, "caught", 3, "Catch 3 wild creatures."));
-            all.Add(FromEnemy("batling", "Screamer", "Fragile, but its wide scream stuns everything close.", "screech", 1, 80, 0, 0.5f, "bestLevel", 25, "Reach level 25 in a run."));
-            all.Add(FromEnemy("ramhorn", "Bruiser", "Sweeps wide cones of flame at close range.", "fire-fan", 1.15f, 115, 1, 0, "guardians", 3, "Beat 3 guardians."));
-            all.Add(FromEnemy("shockling", "Striker", "Hits everything in a straight line with lightning.", "arc-lance", 1.1f, 90, 0, 0, "evolutions", 6, "Evolve 6 times."));
-            all.Add(FromEnemy("brute", "Juggernaut", "Enormous and slow to kill, lobbing explosive boulders.", "boulder-lob", 1.1f, 170, 3, 0, "wins", 1, "Clear the tower once."));
+            all.Add(FromEnemy("skitter", "Scrapper", "A nimble pest that darts around throwing quick jabs.", "quick-jab", 1, 1, 95, 1, 0, 0, "kills", 500, "Get 500 knockouts in total."));
+            all.Add(FromEnemy("spitter", "Sniper", "Sprays slowing bubbles from a safe distance.", "bubble-burst", 1, 1.1f, 90, 0, 1, 0, "runs", 3, "Play 3 runs."));
+            all.Add(FromEnemy("sporeling", "Spreader", "Surrounds itself with a slowing cloud and heals as it goes.", "toxic-cloud", 1, 1, 100, 0, 1, 1, "bestLevel", 15, "Reach level 15 in a run."));
+            all.Add(FromEnemy("wisp", "Curser", "Curses the ground under single targets for heavy damage.", "hex-smite", 1, 1.15f, 85, 0, 1, 0, "caught", 3, "Catch 3 wild creatures."));
+            all.Add(FromEnemy("batling", "Screamer", "Fragile, but its wide scream stuns everything close.", "screech", 1, 1, 80, 0, 0, 0.5f, "bestLevel", 25, "Reach level 25 in a run."));
+            all.Add(FromEnemy("ramhorn", "Bruiser", "Sweeps wide cones of flame at close range.", "fire-fan", 1, 1.15f, 115, 1, 1, 0, "guardians", 3, "Beat 3 guardians."));
+            all.Add(FromEnemy("shockling", "Striker", "Hits everything in a straight line with lightning.", "arc-lance", 1, 1.1f, 90, 0, 1, 0, "evolutions", 6, "Evolve 6 times."));
+            all.Add(FromEnemy("brute", "Juggernaut", "Enormous and slow to kill, lobbing explosive boulders.", "boulder-lob", 1.1f, 1, 170, 3, 1, 0, "wins", 1, "Clear the tower once."));
             return all.ToArray();
         }
 
@@ -478,13 +490,15 @@ namespace Swarmfall
 
         public static readonly PassiveDef[] Passives =
         {
-            new PassiveDef { Id = "might", Name = "Power Band", Stat = "might", Mul = true, Value = 0.12f, Unit = "%", Desc = "damage" },
+            new PassiveDef { Id = "might", Name = "Power Band", Stat = "might", Mul = true, Value = 0.12f, Unit = "%", Desc = "might (physical damage)" },
+            new PassiveDef { Id = "focus", Name = "Focus Gem", Stat = "focus", Mul = true, Value = 0.12f, Unit = "%", Desc = "focus (special damage)" },
             new PassiveDef { Id = "haste", Name = "Quick Coil", Stat = "haste", Mul = true, Value = 0.1f, Unit = "%", Desc = "attack speed" },
             new PassiveDef { Id = "area", Name = "Wide Lens", Stat = "area", Mul = true, Value = 0.12f, Unit = "%", Desc = "attack area" },
             new PassiveDef { Id = "speed", Name = "Light Boots", Stat = "speed", Mul = true, Value = 0.07f, Unit = "%", Desc = "move speed" },
             new PassiveDef { Id = "vigor", Name = "Vigor Root", Stat = "maxHp", Value = 22, Unit = "", Desc = "max HP" },
             new PassiveDef { Id = "regen", Name = "Mending Moss", Stat = "regen", Value = 0.7f, Unit = "/s", Desc = "HP regen" },
-            new PassiveDef { Id = "armor", Name = "Plate Shell", Stat = "armor", Value = 1.4f, Unit = "", Desc = "armor" },
+            new PassiveDef { Id = "armor", Name = "Plate Shell", Stat = "armor", Value = 1.4f, Unit = "", Desc = "armor (physical defense)" },
+            new PassiveDef { Id = "will", Name = "Calm Bell", Stat = "will", Value = 1.4f, Unit = "", Desc = "will (special defense)" },
             new PassiveDef { Id = "magnet", Name = "Lodestone", Stat = "magnet", Value = 1.8f, Unit = "m", Desc = "pickup range" },
             new PassiveDef { Id = "crit", Name = "Keen Eye", Stat = "crit", Value = 0.06f, Unit = "%", Desc = "crit chance" },
             new PassiveDef { Id = "xp", Name = "Study Charm", Stat = "xpGain", Mul = true, Value = 0.1f, Unit = "%", Desc = "XP gain" },
@@ -499,14 +513,15 @@ namespace Swarmfall
         }
         static ItemDef Charm(string id, string name, string elem)
         {
-            return Item(id, name, "common", 10, "+30% " + Elements[elem].Name + " move damage and +3% all damage.", S("elem:" + elem, 0.3f), X("might", 0.03f));
+            return Item(id, name, "common", 10, "+30% " + Elements[elem].Name + " move damage and +3% all damage.", S("elem:" + elem, 0.3f), X("power", 0.03f));
         }
 
         // Items come from chests, shops and bosses rather than level-ups, and most of them stack.
         // Some have no stats: their effect is checked by id in Run.cs or Player.cs.
         public static readonly ItemDef[] Items =
         {
-            Item("whetstone", "Whetstone", "common", 10, "+8% damage.", X("might", 0.08f)),
+            Item("whetstone", "Whetstone", "common", 10, "+8% might (physical damage).", X("might", 0.08f)),
+            Item("prism", "Prism Shard", "common", 10, "+8% focus (special damage).", X("focus", 0.08f)),
             Item("oil-flask", "Oil Flask", "common", 10, "+8% attack speed.", X("haste", 0.08f)),
             Item("field-lens", "Field Lens", "common", 10, "+8% attack area.", X("area", 0.08f)),
             Item("ration", "Trail Ration", "common", 10, "+15 max HP.", S("maxHp", 15)),
@@ -533,12 +548,12 @@ namespace Swarmfall
             Item("twin-barrel", "Twin Barrel", "epic", 2, "+1 projectile on all moves.", S("extraShots", 1)),
             Item("storm-coil", "Storm Coil", "epic", 3, "+4% crit chance. Crits call lightning onto another nearby enemy.", S("crit", 0.04f)),
             Item("bonk-stick", "Bonk Stick", "epic", 3, "Each hit has a 3% chance to deal 8x damage."),
-            Item("war-drum", "War Drum", "epic", 5, "+15% damage and +15% area.", X("might", 0.15f), X("area", 0.15f)),
+            Item("war-drum", "War Drum", "epic", 5, "+15% damage and +15% area.", X("power", 0.15f), X("area", 0.15f)),
             Item("reaper-sash", "Reaper Sash", "epic", 1, "Every 100 knockouts in the run: +1% damage, up to +30%."),
             Item("second-heart", "Second Heart", "legend", 2, "When you fall, revive once with 60% HP.", S("revives", 1)),
             Item("rally-bell", "Rally Bell", "legend", 1, "Ultimate charges 25% faster, and casting it recharges all your moves.", X("ultRate", 0.25f)),
             Item("master-key", "Master Key", "legend", 1, "Moves can reach level 10.", S("moveCap", 2)),
-            Item("glass-crown", "Glass Crown", "legend", 1, "+30% damage and +20% attack speed, but -10% max HP.", X("might", 0.3f), X("haste", 0.2f), X("maxHp", -0.1f)),
+            Item("glass-crown", "Glass Crown", "legend", 1, "+30% damage and +20% attack speed, but -10% max HP.", X("power", 0.3f), X("haste", 0.2f), X("maxHp", -0.1f)),
         };
 
         static UpgradeDef U(string id, string name, string desc, string stat, float per, bool mul, int max, int cost, float growth = 1.5f)
@@ -548,13 +563,13 @@ namespace Swarmfall
 
         public static readonly UpgradeDef[] LabUpgrades =
         {
-            U("might", "Training", "+4% damage per level", "might", 0.04f, true, 8, 20),
+            U("might", "Training", "+4% might and focus per level", "power", 0.04f, true, 8, 20),
             U("vigor", "Stamina", "+8 max HP per level", "maxHp", 8, false, 6, 20),
             U("agility", "Agility", "+2.5% move speed per level", "speed", 0.025f, true, 6, 20),
             U("haste", "Swiftness", "+2% attack speed per level", "haste", 0.02f, true, 5, 30),
             U("area", "Expansion", "+3% attack area per level", "area", 0.03f, true, 5, 30),
             U("crit", "Precision", "+1% crit chance per level", "crit", 0.01f, false, 5, 30),
-            U("armor", "Shell", "+1 armor per level", "armor", 1, false, 5, 30),
+            U("armor", "Shell", "+1 armor and will per level", "guard", 1, false, 5, 30),
             U("regen", "Mending", "+0.2 HP regen per level", "regen", 0.2f, false, 5, 30),
             U("magnet", "Magnetism", "+0.6 pickup range per level", "magnet", 0.6f, false, 5, 15),
             U("study", "Study", "+5% experience per level", "xpGain", 0.05f, true, 6, 25),
@@ -578,7 +593,7 @@ namespace Swarmfall
 
         public static readonly Pact[] Pacts =
         {
-            new Pact { Name = "Pact of Force", Desc = "+25% damage, but a 15% harder horde", Gain = X("might", 0.25f), Heat = 0.15f },
+            new Pact { Name = "Pact of Force", Desc = "+25% damage, but a 15% harder horde", Gain = X("power", 0.25f), Heat = 0.15f },
             new Pact { Name = "Pact of Haste", Desc = "+20% attack speed, but a 15% harder horde", Gain = X("haste", 0.2f), Heat = 0.15f },
             new Pact { Name = "Pact of Reach", Desc = "+25% attack area, but a 10% harder horde", Gain = X("area", 0.25f), Heat = 0.1f },
             new Pact { Name = "Pact of Flesh", Desc = "+60 max HP, but a 15% harder horde", Gain = S("maxHp", 60), Heat = 0.15f },
@@ -609,10 +624,10 @@ namespace Swarmfall
         {
             T(X("haste", 0.25f), "+25% attack speed", X("duration", -0.2f), "-20% duration"),
             T(X("xpGain", 0.4f), "+40% experience", X("speed", -0.1f), "-10% move speed"),
-            T(X("might", 0.25f), "+25% damage", X("maxHp", -0.15f), "-15% max HP"),
+            T(X("power", 0.25f), "+25% damage", X("maxHp", -0.15f), "-15% max HP"),
             T(X("area", 0.3f), "+30% area", X("haste", -0.1f), "-10% attack speed"),
             T(X("goldGain", 0.6f), "+60% gold", S("magnet", -1.5f), "-1.5 pickup range"),
-            T(S("armor", 6), "+6 armor", X("speed", -0.08f), "-8% move speed"),
+            T(S("guard", 6), "+6 armor and will", X("speed", -0.08f), "-8% move speed"),
         };
 
         static MoveDef P(Kind kind, float dmg, float range = 0, float radius = 0, float speed = 0, int count = 1, int pierce = 0, float knock = 0, float arc = 0, float width = 0, float dur = 0, float spread = 0, string elem = null, Status st = default(Status), bool spreadAll = false)

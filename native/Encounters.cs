@@ -321,7 +321,7 @@ namespace Swarmfall
                 if (o.Type == EncKind.Pod && d < 2.2f)
                 {
                     o.Used = true;
-                    float dmg = 40 * (1 + run.Zone) * p.Stats.Might;
+                    float dmg = 40 * (1 + run.Zone) * p.Stats.Focus;
                     run.Blast(o.X, o.Y + 0.5f, o.Z, PodRadius, dmg, "volt", 0xffd93b, 14, new Status(0, 0, 0.6f), 0);
                     run.AddTrauma(0.4f);
                     run.Hud.Toast("Pod detonated");

@@ -209,6 +209,13 @@ namespace Swarmfall
             return amount * eff;
         }
 
+        // The type this enemy attacks with: the better of its two against the player.
+        public string AttackElem(int i)
+        {
+            EnemyDef def = Kinds[Kind[i]];
+            return Data.BestElem(def.Elem, def.Elem2, run.Player.Elem, run.Player.SecondElem);
+        }
+
         // Applies damage after element matchups.
         public bool Hit(int i, float amount, string elem, HitOpts opts)
         {
@@ -389,7 +396,7 @@ namespace Swarmfall
                     if (Atk[i] <= 0 && dist < 19)
                     {
                         Atk[i] = M.Range(2.6f, 4);
-                        run.Projectiles.EnemyShot(X[i], Y[i] + Hgt[i] * 0.6f, Z[i], nx, nz, 11, AttackDamage(i, Dmg[i]), 0x7fd0ff);
+                        run.Projectiles.EnemyShot(X[i], Y[i] + Hgt[i] * 0.6f, Z[i], nx, nz, 11, AttackDamage(i, Dmg[i]), 0x7fd0ff, AttackElem(i));
                     }
                 }
 
@@ -451,7 +458,7 @@ namespace Swarmfall
                     Z[i] += oz * push * (1 - share);
                     player.CrowdX -= ox * push * share;
                     player.CrowdZ -= oz * push * share;
-                    if (StunT[i] <= 0 && player.Hurt(AttackDamage(i, Dmg[i])))
+                    if (StunT[i] <= 0 && player.Hurt(AttackDamage(i, Dmg[i]), AttackElem(i)))
                     {
                         player.Shove(-ox, -oz, (flags & (Flag.Boss | Flag.Charger)) != 0 ? 9 : 3.5f);
                         if (player.Stats.Thorns > 0) Hit(i, player.Stats.Thorns, null, default(HitOpts));
@@ -524,7 +531,7 @@ namespace Swarmfall
                     for (int k = 0; k < n; k++)
                     {
                         float a = off + (float)k / n * M.Tau;
-                        run.Projectiles.EnemyShot(X[i], Y[i] + Hgt[i] * 0.5f, Z[i], M.Cos(a), M.Sin(a), 9.5f, AttackDamage(i, Dmg[i] * 0.6f), 0xff6ab0);
+                        run.Projectiles.EnemyShot(X[i], Y[i] + Hgt[i] * 0.5f, Z[i], M.Cos(a), M.Sin(a), 9.5f, AttackDamage(i, Dmg[i] * 0.6f), 0xff6ab0, AttackElem(i));
                     }
                     audio.Boom(0.6f);
                     FinishBossAttack(i);
@@ -560,7 +567,7 @@ namespace Swarmfall
                     {
                         float a = M.Range(0, M.Tau);
                         float d = k == 0 ? 0 : M.Range(3, 8);
-                        run.EnemyBlast(p.X + M.Cos(a) * d, p.Z + M.Sin(a) * d, 3.2f, 0.95f, AttackDamage(i, Dmg[i]), 0xff5a7a);
+                        run.EnemyBlast(p.X + M.Cos(a) * d, p.Z + M.Sin(a) * d, 3.2f, 0.95f, AttackDamage(i, Dmg[i]), 0xff5a7a, AttackElem(i));
                     }
                     if (M.Rand() < 0.5f) run.Director.SummonAdds(X[i], Z[i], 4);
                     FinishBossAttack(i);

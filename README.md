@@ -63,6 +63,9 @@ the wild, and it joins your roster for good. The menu shows each creature's chal
 - **Difficulty:** Normal, Hard and Nightmare. Harder settings give more Shards.
 - **Types:** Flame, Tide, Bloom, Volt, Stone, Iron, Venom, Spirit and Basic. Matchups do 2x, half or nothing, and
   dual types multiply. Some moves react with each other, such as Tide then Volt for Shock.
+- **Physical and special:** Stone, Iron, Venom and Basic are physical; Flame, Tide, Bloom, Volt and Spirit are
+  special. Might powers physical moves and Focus powers special ones. Armor blocks physical hits and Will blocks
+  special hits.
 
 ## The Lab
 

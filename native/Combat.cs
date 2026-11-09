@@ -56,7 +56,7 @@ namespace Swarmfall
             return p;
         }
 
-        public void EnemyShot(float x, float y, float z, float nx, float nz, float speed, float dmg, uint color)
+        public void EnemyShot(float x, float y, float z, float nx, float nz, float speed, float dmg, uint color, string elem = null)
         {
             Shot p = Spawn();
             if (p == null) return;
@@ -65,6 +65,7 @@ namespace Swarmfall
             p.Life = 4;
             p.Radius = 0.5f;
             p.Dmg = dmg;
+            p.Elem = elem;
             p.Color = color;
             p.Hostile = true;
             p.Size = 1;
@@ -133,7 +134,7 @@ namespace Swarmfall
                         float reach = player.Radius + p.Radius;
                         if (dx * dx + dz * dz < reach * reach && M.Abs(dy) < 1.5f)
                         {
-                            player.Hurt(p.Dmg);
+                            player.Hurt(p.Dmg, p.Elem);
                             alive = false;
                         }
                     }

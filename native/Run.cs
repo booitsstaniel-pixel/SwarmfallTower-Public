@@ -317,7 +317,7 @@ namespace Swarmfall
             });
             if (target < 0) return;
             lastBolt = Time;
-            float dmg = (12 + Player.Level * 2) * Player.ItemCount("storm-coil") * Player.Stats.Might;
+            float dmg = (12 + Player.Level * 2) * Player.ItemCount("storm-coil") * Player.Stats.Focus;
             Vfx.BeamFx(Enemies.X[target], Enemies.Y[target] + 14, Enemies.Z[target], Enemies.X[target], Enemies.Y[target], Enemies.Z[target], Data.ElemColor("volt"), 0.45f, 0.16f);
             Enemies.Hit(target, dmg, "volt", new HitOpts { Stun = 0.2f });
         }
@@ -341,13 +341,13 @@ namespace Swarmfall
         }
 
         // Delayed attack that warns the player with a danger zone first.
-        public void EnemyBlast(float x, float z, float r, float delay, float dmg, uint color)
+        public void EnemyBlast(float x, float z, float r, float delay, float dmg, uint color, string elem = null)
         {
             float y = Terrain.HeightAt(x, z);
             Vfx.Telegraph(x, y, z, r, color, delay);
             After(delay, () =>
             {
-                if (M.Hypot(Player.X - x, Player.Z - z) < r + Player.Radius && Player.Y - y < 2) Player.Hurt(dmg);
+                if (M.Hypot(Player.X - x, Player.Z - z) < r + Player.Radius && Player.Y - y < 2) Player.Hurt(dmg, elem);
                 Vfx.RingFx(x, y, z, r, color, 0.3f);
                 Vfx.Burst(x, y + 0.4f, z, color, 14, 7, 0.3f);
                 AddTrauma(0.15f);
@@ -374,11 +374,11 @@ namespace Swarmfall
             if (M.Rand() < (big ? 0.5f : 0.012f)) Pickups.Spawn(Pickups.Heart, x, y, z, 0);
             if (elite && M.Rand() < 0.3f * LootMult) Encounters.DropChest(x, z);
 
-            if (Player.ItemCount("reaper-sash") > 0 && Kills % 100 == 0 && Kills <= 3000) Player.Stats.Might *= 1.01f;
+            if (Player.ItemCount("reaper-sash") > 0 && Kills % 100 == 0 && Kills <= 3000) Player.AddStat("power", true, 0.01f);
             int core = Player.ItemCount("ember-core");
             if (core > 0 && Enemies.BurnT[i] > 0 && M.Rand() < 0.5f)
             {
-                After(0, () => Blast(x, y, z, 3.5f, (10 + Player.Level * 1.5f) * core * Player.Stats.Might, "fire", Data.ElemColor("fire"), 2, new Status(2, 0, 0), 0));
+                After(0, () => Blast(x, y, z, 3.5f, (10 + Player.Level * 1.5f) * core * Player.Stats.Focus, "fire", Data.ElemColor("fire"), 2, new Status(2, 0, 0), 0));
             }
 
             uint color = Data.ElemColor(def.Elem);
