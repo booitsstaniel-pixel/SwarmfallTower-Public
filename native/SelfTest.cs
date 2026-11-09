@@ -631,11 +631,21 @@ namespace Swarmfall
             sp.Iframes = 0;
             dummyHp = sleach.Enemies.Hp[dummy];
             startX = sp.X;
-            ok &= Expect(Moves.Fire(sleach, charge), "lightning charge should find a target", report);
+            sp.FacingX = 1;
+            sp.FacingZ = 0;
+            ok &= Expect(Moves.Fire(sleach, charge), "lightning charge should fire", report);
             ok &= Expect(sleach.Enemies.Hp[dummy] < dummyHp, "lightning charge should hit the enemy in its path", report);
             ok &= Expect(sp.Iframes > 0, "dealeach should be unhittable while charging", report);
             Advance(sleach, 24);
-            ok &= Expect(sp.X - startX > 3, "lightning charge should carry dealeach forward", report);
+            ok &= Expect(sp.X - startX > 3, "lightning charge should carry dealeach the way it faces", report);
+            sleach.Enemies.Clear();
+            sp.FacingX = 0;
+            sp.FacingZ = 1;
+            float startZ = sp.Z;
+            charge.CdLeft = 0;
+            ok &= Expect(Moves.Fire(sleach, charge), "lightning charge should fire with no enemies around", report);
+            Advance(sleach, 24);
+            ok &= Expect(sp.Z - startZ > 3, "lightning charge should still dash when nothing is there", report);
             report.AppendLine("--- Type chart: all matchups, immunity, bosses, dual types, physical and special, new moves " + (ok ? "ok" : "FAILED"));
             return ok;
         }

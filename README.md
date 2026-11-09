@@ -53,7 +53,7 @@ the wild, and it joins your roster for good. The menu shows each creature's chal
 - **Toyat** evolves into Eytetl, then Xutetl (Stone/Bloom).
 - **Furrowkit** evolves into Burrowbat, then Borrog (Flame/Stone).
 - **Quilven**, a Basic-type slime, changes into one of 8 typed forms at level 10.
-- **Sleach** (Basic/Iron) evolves into Dealeach at level 16, trading Iron for Volt. Only Dealeach can learn Lightning Charge, a dash through enemies.
+- **Sleach** (Basic/Iron) evolves into Dealeach at level 16, trading Iron for Volt. Only Dealeach can learn Lightning Charge, a dash forward in the direction you face every few seconds.
 - Eight more creatures, met as enemies first, can join the roster too.
 
 ## Modes and difficulty

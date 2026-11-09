@@ -320,16 +320,18 @@ namespace Swarmfall
             return true;
         }
 
-        // The player dashes through the nearest enemy. Everything along the path is hit at once, and the dash
-        // itself can't be hit. Area makes the path longer and wider.
+        // At every cooldown the player dashes the move's full range in the direction they face, whether or not
+        // anything is there. Everything along the path is hit at once, and the dash itself can't be hit.
+        // Area makes the path longer and wider.
         static bool FireCharge(Run run, Move m)
         {
-            Target t = Aim(run, m.Def.Elem, m.Def.Range);
-            if (t == null) return false;
             Enemies e = run.Enemies;
             Player p = run.Player;
+            float fl = M.Hypot(p.FacingX, p.FacingZ);
+            if (fl < 0.001f) return false;
+            var t = new Target { Nx = p.FacingX / fl, Nz = p.FacingZ / fl };
             float area = m.Mods.Area * p.Stats.Area;
-            float len = M.Min(t.D + 3, m.Def.Range * area);
+            float len = m.Def.Range * area;
             float width = m.Def.Width * area;
             float dmg = DamageOf(run, m);
             e.Query(p.X + t.Nx * len / 2, p.Z + t.Nz * len / 2, len / 2 + width, i =>
