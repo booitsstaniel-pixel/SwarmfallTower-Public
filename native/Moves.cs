@@ -103,7 +103,7 @@ namespace Swarmfall
             Player p = run.Player;
             float bonus;
             p.ElemBonus.TryGetValue(m.Def.Elem, out bonus);
-            return m.Def.Dmg * (1 + 0.143f * (m.Level - 1)) * m.Mods.Dmg * p.Stats.Power(m.Def.Elem) * (1 + bonus);
+            return m.Def.Dmg * (1 + 0.143f * (m.Level - 1)) * m.Mods.Dmg * p.Stats.Power(m.Def.Special) * (1 + bonus);
         }
         static int CountOf(Run run, Move m) { return m.Def.Count + m.Mods.Count + (int)run.Player.Stats.ExtraShots; }
         static float RadiusOf(Run run, Move m) { return m.Def.Radius * m.Mods.Area * run.Player.Stats.Area; }
@@ -617,7 +617,7 @@ namespace Swarmfall
             {
                 Key = "new:" + id,
                 Title = def.Name,
-                Tag = "New move - " + Data.Elements[def.Elem].Name,
+                Tag = "New move - " + Data.Elements[def.Elem].Name + (def.Special ? " special" : " physical"),
                 Color = Data.ElemColor(def.Elem),
                 Desc = def.Desc,
                 Run = () => player.Moves.Add(new Move(id, def)),

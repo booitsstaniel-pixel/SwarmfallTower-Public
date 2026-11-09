@@ -341,13 +341,13 @@ namespace Swarmfall
         }
 
         // Delayed attack that warns the player with a danger zone first.
-        public void EnemyBlast(float x, float z, float r, float delay, float dmg, uint color, string elem = null)
+        public void EnemyBlast(float x, float z, float r, float delay, float dmg, uint color, bool special = false)
         {
             float y = Terrain.HeightAt(x, z);
             Vfx.Telegraph(x, y, z, r, color, delay);
             After(delay, () =>
             {
-                if (M.Hypot(Player.X - x, Player.Z - z) < r + Player.Radius && Player.Y - y < 2) Player.Hurt(dmg, elem);
+                if (M.Hypot(Player.X - x, Player.Z - z) < r + Player.Radius && Player.Y - y < 2) Player.Hurt(dmg, special);
                 Vfx.RingFx(x, y, z, r, color, 0.3f);
                 Vfx.Burst(x, y + 0.4f, z, color, 14, 7, 0.3f);
                 AddTrauma(0.15f);

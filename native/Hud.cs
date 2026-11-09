@@ -491,7 +491,7 @@ namespace Swarmfall
             if (owned)
             {
                 float used = Wrapped(small, p.Blurb, tx, y + 68, tw, TextCol);
-                string line = "HP " + (int)p.MaxHp + " · Might x" + p.Might.ToString("0.00") + " · Focus x" + p.Focus.ToString("0.00") + " · Armor " + (int)p.Armor + " · Will " + (int)p.Will + " · Starts with " + Data.Move(p.Move).Name;
+                string line = "HP " + (int)p.MaxHp + " · Might x" + p.Might.ToString("0.00") + " · Focus x" + p.Focus.ToString("0.00") + " · Armor " + (int)p.Armor + " · Will " + (int)p.Will + " · Starts with " + Data.Move(p.Move).Name + (Data.Move(p.Move).Special ? " (special)" : " (physical)");
                 float more = Wrapped(small, line, tx, y + 72 + used, tw, Muted);
                 if (p.Forms != null) Label(small, "Changes form at Lv " + p.FormLevel, tx, y + 76 + used + more, Gold, 0, 1);
                 else if (p.Evolutions.Length == 1) Label(small, "Evolves at Lv " + p.Evolutions[0].Level, tx, y + 76 + used + more, Gold, 0, 0);
@@ -612,7 +612,7 @@ namespace Swarmfall
             Label(small, p.Role.ToUpper() + " · " + p.TypeLine(), x + StarterW / 2, y, tone, 1, 0);
             y += 30;
             y += Wrapped(small, p.Blurb, tx, y, tw, TextCol) + 8;
-            y += Wrapped(small, "HP " + (int)p.MaxHp + " · Might x" + p.Might.ToString("0.00") + " · Focus x" + p.Focus.ToString("0.00") + " · Armor " + (int)p.Armor + " · Will " + (int)p.Will + " · Starts with " + Data.Move(p.Move).Name, tx, y, tw, Muted) + 8;
+            y += Wrapped(small, "HP " + (int)p.MaxHp + " · Might x" + p.Might.ToString("0.00") + " · Focus x" + p.Focus.ToString("0.00") + " · Armor " + (int)p.Armor + " · Will " + (int)p.Will + " · Starts with " + Data.Move(p.Move).Name + (Data.Move(p.Move).Special ? " (special)" : " (physical)"), tx, y, tw, Muted) + 8;
             var names = new List<string>();
             foreach (Stage st in p.Stages()) names.Add(st.Name);
             Wrapped(small, "Evolves: " + string.Join(", then ", names.ToArray()), tx, y, tw, Gold);

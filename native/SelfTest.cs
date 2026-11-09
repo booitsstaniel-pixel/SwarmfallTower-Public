@@ -587,22 +587,25 @@ namespace Swarmfall
             golem.Enemies.Flags[big] |= Flag.Boss;
             ok &= Expect(golem.Enemies.AttackDamage(big, 10) == 20, "a boss attack should be capped at 2x", report);
 
-            // Physical types use Might and Armor, special types use Focus and Will.
-            ok &= Expect(Data.IsSpecial("fire") && Data.IsSpecial("spirit") && !Data.IsSpecial("stone") && !Data.IsSpecial("basic") && !Data.IsSpecial(null), "flame and spirit should be special, stone, basic and untyped physical", report);
+            // Each move is physical (Might, Armor) or special (Focus, Will), whatever its type.
+            ok &= Expect(Data.Move("ember-shot").Special && !Data.Move("razor-seed").Special && Data.Move("screech").Special && !Data.Move("quick-jab").Special && !Data.Move("riptide").Special, "moves should pick physical or special for themselves", report);
+            var seenPhys = new HashSet<string>();
+            var seenSpec = new HashSet<string>();
+            foreach (MoveDef md in Data.MoveList) (md.Special ? seenSpec : seenPhys).Add(md.Elem);
+            ok &= Expect(seenPhys.Count >= 4 && seenSpec.Count >= 4, "both categories should be spread across several types", report);
             Stats st = golem.Player.Stats;
             st.Might = 2; st.Focus = 3; st.Armor = 4; st.Will = 6;
-            ok &= Expect(st.Power("iron") == 2 && st.Power("water") == 3 && st.Guard("venom") == 4 && st.Guard("volt") == 6, "power and guard should follow the type", report);
-            golem.Player.AddStat("power", true, 0.5f);
+            ok &= Expect(st.Power(false) == 2 && st.Power(true) == 3 && st.Guard(false) == 4 && st.Guard(true) == 6, "power and guard should follow the category", report);            golem.Player.AddStat("power", true, 0.5f);
             golem.Player.AddStat("guard", false, 1);
             ok &= Expect(st.Might == 3 && st.Focus == 4.5f && st.Armor == 5 && st.Will == 7, "power and guard should raise both stats", report);
             golem.GodMode = false;
             golem.Player.Iframes = 0;
             float before = golem.Player.Hp;
-            golem.Player.Hurt(20, "stone");
+            golem.Player.Hurt(20, false);
             ok &= Expect(M.Abs(before - golem.Player.Hp - 15) < 0.01f, "armor should block a physical hit", report);
             golem.Player.Iframes = 0;
             before = golem.Player.Hp;
-            golem.Player.Hurt(20, "fire");
+            golem.Player.Hurt(20, true);
             ok &= Expect(M.Abs(before - golem.Player.Hp - 13) < 0.01f, "will should block a special hit", report);
             report.AppendLine("--- Type chart: all matchups, immunity, bosses, dual types, physical and special " + (ok ? "ok" : "FAILED"));
             return ok;

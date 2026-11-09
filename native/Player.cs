@@ -6,7 +6,7 @@ namespace Swarmfall
 {
     sealed class Stats
     {
-        // Might and Armor apply to physical types, Focus and Will to special types (Data.IsSpecial).
+        // Might and Armor apply to physical moves and hits, Focus and Will to special ones (MoveDef.Special).
         public float Might = 1, Focus = 1, Will, Haste = 1, Area = 1, Duration = 1, Speed = 8, MaxHp = 100, Regen, Armor, Magnet = 4.5f, Crit = 0.05f, XpGain = 1, Luck;
         public int MoveSlots = 3, VitaminSlots = 3, CardOptions = 3;
         public float JumpHeight = 1, ExtraJumps, ExtraShots, CritDmg = 2, Lifesteal, Thorns, GoldGain = 1, Revives, UltRate = 1, MoveCap;
@@ -75,11 +75,11 @@ namespace Swarmfall
             }
         }
 
-        // The damage multiplier for a hit of this type: Focus for special types, Might for physical or untyped.
-        public float Power(string elem) { return Data.IsSpecial(elem) ? Focus : Might; }
+        // The damage multiplier for a physical (Might) or special (Focus) attack.
+        public float Power(bool special) { return special ? Focus : Might; }
 
-        // What gets taken off an incoming hit of this type: Will for special types, Armor for physical or untyped.
-        public float Guard(string elem) { return Data.IsSpecial(elem) ? Will : Armor; }
+        // What gets taken off an incoming physical (Armor) or special (Will) hit.
+        public float Guard(bool special) { return special ? Will : Armor; }
     }
 
     // Anything that fights beside the player: the fossil partner, or a captured ally.
@@ -316,7 +316,7 @@ namespace Swarmfall
             uint color = Data.ElemColor(Elem);
             run.Vfx.RingFx(X, Y, Z, 11, 0xffffff, 0.7f, 0.1f);
             run.Vfx.Burst(X, Y + 1.5f, Z, color, 40, 9, 0.45f, 0.7f);
-            run.Blast(X, Y, Z, 9, (30 + Level * 2) * Stats.Power(Elem), Elem, color, 14, new Status(0, 0, 0.8f), 0, SecondElem);
+            run.Blast(X, Y, Z, 9, (30 + Level * 2) * Stats.Focus, Elem, color, 14, new Status(0, 0, 0.8f), 0, SecondElem);
             run.Hud.Banner(from + " evolved into " + next.Name + "!", next.Gain);
             run.Audio.LevelUp();
             run.Freeze(0.2f);
@@ -365,7 +365,7 @@ namespace Swarmfall
                 s.Vy = (enemies.Y[i] + enemies.Hgt[i] * 0.55f - d.Y) / flight;
                 s.Vz = dz / dist * 24;
                 s.Life = 1.2f;
-                s.Dmg = (d.IsAlly ? 14 + Level * 1.6f : 22 + Level * 2.5f) * Stats.Power(d.Elem);
+                s.Dmg = (d.IsAlly ? 14 + Level * 1.6f : 22 + Level * 2.5f) * Stats.Might;
                 s.Elem = d.Elem;
                 s.Color = Data.ElemColor(d.Elem);
             }
@@ -407,7 +407,7 @@ namespace Swarmfall
             Hp = Stats.MaxHp * 0.6f;
             Iframes = 2.5f;
             run.Vfx.RingFx(X, Y, Z, 12, 0xffffff, 0.7f, 0.1f);
-            run.Blast(X, Y, Z, 10, 60 * Stats.Power(Elem), Elem, 0xffffff, 14, new Status(0, 0, 1), 0, SecondElem);
+            run.Blast(X, Y, Z, 10, 60 * Stats.Focus, Elem, 0xffffff, 14, new Status(0, 0, 1), 0, SecondElem);
             run.Hud.Banner("Second Heart", "You got back up");
             return true;
         }
@@ -416,8 +416,8 @@ namespace Swarmfall
         public float LastHit;
         const float SecondTypeBonus = 0.25f;
         const int FormOffers = 3;
-        // elem is the attacker's type, which picks Armor or Will. Null counts as physical.
-        public bool Hurt(float amount, string elem = null)
+        // Physical hits are reduced by Armor, special hits by Will.
+        public bool Hurt(float amount, bool special = false)
         {
             if (IsDead || Iframes > 0 || run.GodMode) return false;
             // Zero means the attacker's type can't touch this one.
@@ -430,7 +430,7 @@ namespace Swarmfall
                 }
                 return false;
             }
-            float dmg = M.Max(1, amount - Stats.Guard(elem));
+            float dmg = M.Max(1, amount - Stats.Guard(special));
             LastHit = amount;
             Hp -= dmg;
             Iframes = HurtIframes;
@@ -630,7 +630,7 @@ namespace Swarmfall
             Diving = false;
             // The slam scales with how far you fell.
             float r = M.Min(9, 3.2f + fall * 0.4f) * Stats.Area;
-            float dmg = (14 + fall * 3.5f) * Stats.Power(Elem);
+            float dmg = (14 + fall * 3.5f) * Stats.Might;
             run.Blast(X, Y, Z, r, dmg, Elem, Data.ElemColor(Elem), 9, new Status(0, 0, 0.35f), 0, SecondElem);
             run.Audio.Boom(0.8f);
             Iframes = M.Max(Iframes, 0.25f);
@@ -643,7 +643,7 @@ namespace Swarmfall
             run.Profile.Add("ultimates");
             if (ItemCount("rally-bell") > 0) foreach (Move m in Moves) m.CdLeft = 0;
             uint color = Data.ElemColor(Elem);
-            float dmg = 60 * Stats.Power(Elem) * (1 + Level * 0.12f) * (1 + StageIndex * 0.5f);
+            float dmg = 60 * Stats.Focus * (1 + Level * 0.12f) * (1 + StageIndex * 0.5f);
             Iframes = 1.5f;
             run.Vfx.RingFx(X, Y, Z, 16, 0xffffff, 0.6f, 0.08f);
             for (int k = 0; k < 3; k++)
