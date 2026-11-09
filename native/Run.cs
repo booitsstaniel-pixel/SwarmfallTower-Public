@@ -584,7 +584,7 @@ namespace Swarmfall
             }
 
             if (State == GameState.Play && Player.CanEvolve) Player.Evolve();
-            if (State == GameState.Play && Player.NeedsForm) OpenChoice(Player.FormChoice());
+            if (State == GameState.Play && Player.NeedsForm) Player.TakeForm(Player.PickForm());
 
             if (State == GameState.Play)
             {

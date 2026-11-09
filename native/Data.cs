@@ -66,7 +66,7 @@ namespace Swarmfall
         // Starters are offered in the first-launch window. You pick one, and every other creature
         // has a challenge and must then be caught in the wild.
         public bool Starter;
-        // Alternative second stages. At FormLevel the player picks one, instead of following Evolutions.
+        // Alternative second stages. At FormLevel the one matching the most common type among its moves is taken.
         public Stage[] Forms;
         public int FormLevel;
         public string ChallengeCounter, ChallengeText;

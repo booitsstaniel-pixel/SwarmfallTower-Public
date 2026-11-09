@@ -1000,7 +1000,7 @@ namespace Swarmfall
             return ok;
         }
 
-        // The slime picks one of 8 forms at its level, and each form is a real, different stage.
+        // At its level the slime takes the form of its most common move type. Each form is a real, different stage.
         static bool CheckSlimeForms(StringBuilder report)
         {
             bool ok = true;
@@ -1017,15 +1017,16 @@ namespace Swarmfall
                 Player p = run.Player;
                 ok &= Expect(p.Elem == "basic", "a slime should start as Basic", report);
                 ok &= Expect(run.Atlas.Frame(form.Id) >= 0, form.Name + " needs art", report);
+                p.Moves.Clear();
+                p.Moves.Add(new Move("quick-jab", Data.Move("quick-jab")));
+                MoveDef typed = Array.Find(Data.MoveList, d => d.Elem == form.Elem && d.Signature == null);
+                p.Moves.Add(new Move(typed.Id, typed));
                 p.Level = 9;
                 Advance(run, 2);
                 ok &= Expect(run.State == GameState.Play && p.StageIndex == 0, "the slime should not change before its level", report);
                 p.Level = 10;
                 Advance(run, 2);
-                ok &= Expect(run.State == GameState.Choice && run.Hud.Opts != null && run.Hud.Opts.Cards.Count == 3 && run.Hud.Opts.CloseLabel == null, "the slime should be offered 3 forms and have to pick", report);
-                run.Hud.CloseButton();
-                run.CloseChoice();
-                p.TakeForm(form);
+                ok &= Expect(run.State != GameState.Choice || !run.Hud.Opts.Title.EndsWith("changing"), "the slime should change without a choice", report);
                 ok &= Expect(p.Stage == form && p.Elem == form.Elem && p.SecondElem == null && p.StageIndex == 1, form.Name + " should replace its type", report);
                 float bonus;
                 p.ElemBonus.TryGetValue(form.Elem, out bonus);
@@ -1036,13 +1037,22 @@ namespace Swarmfall
                 ok &= Expect(p.Stage == form, form.Name + " should have no later stage", report);
             }
             ok &= Expect(seen.Count == 8 && Array.TrueForAll(elems, seen.Contains), "the forms should cover all 8 elements", report);
-            // A form matching your best move is always on offer.
-            var boosted = new Run();
-            boosted.Start(slime);
-            boosted.Player.Moves.Clear();
-            boosted.Player.Moves.Add(new Move("ember-shot", Data.Move("ember-shot")));
-            for (int k = 0; k < 20; k++) ok &= Expect(boosted.Player.FormChoice().Cards[0].Title == "Bublava", "the first form should match the strongest move", report);
-            report.AppendLine("--- Slime forms: 8 forms, choice, types, one change " + (ok ? "ok" : "FAILED"));
+            // The most common type wins, a tie is random between the tied types, and Basic moves don't count.
+            var picker = new Run();
+            picker.Start(slime);
+            Player pp = picker.Player;
+            Action<string[]> setMoves = ids => { pp.Moves.Clear(); foreach (string id in ids) pp.Moves.Add(new Move(id, Data.Move(id))); };
+            setMoves(new[] { "ember-shot", "flame-claw", "droplet" });
+            for (int k = 0; k < 40; k++) ok &= Expect(pp.PickForm().Name == "Bublava", "two flame moves to one tide should give Bublava", report);
+            setMoves(new[] { "ember-shot", "droplet", "quick-jab" });
+            var tie = new HashSet<string>();
+            for (int k = 0; k < 80; k++) tie.Add(pp.PickForm().Name);
+            ok &= Expect(tie.Count == 2 && tie.Contains("Bublava") && tie.Contains("Dewdrip"), "a flame-tide tie should give either one at random", report);
+            setMoves(new[] { "quick-jab", "screech" });
+            var any = new HashSet<string>();
+            for (int k = 0; k < 120; k++) any.Add(pp.PickForm().Name);
+            ok &= Expect(any.Count >= 6, "with only basic moves any form should come up", report);
+            report.AppendLine("--- Slime forms: 8 forms, picked by move types, ties random, one change " + (ok ? "ok" : "FAILED"));
             return ok;
         }
 

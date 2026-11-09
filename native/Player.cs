@@ -271,7 +271,7 @@ namespace Swarmfall
 
         public bool CanEvolve { get { return StageIndex + 1 < Stages.Length && Level >= Stages[StageIndex + 1].Level; } }
 
-        // A creature with forms picks its next stage instead of following a fixed line.
+        // A creature with forms changes into one picked from its moves instead of following a fixed line.
         public bool NeedsForm { get { return Partner.Forms != null && StageIndex == 0 && Level >= Partner.FormLevel; } }
 
         public void TakeForm(Stage form)
@@ -280,32 +280,22 @@ namespace Swarmfall
             Evolve();
         }
 
-        // Three forms to choose from. The first matches your strongest move's type, if a form has that type.
-        public Choice FormChoice()
+        // The form follows the type that appears most among your current moves (user, 2026-11-09). A tie is
+        // settled at random between the tied types. Types with no form (Basic) don't count, and with no typed
+        // moves at all any form can come up.
+        public Stage PickForm()
         {
-            var pool = new List<Stage>(Partner.Forms);
-            var offered = new List<Stage>();
-            Move best = null;
-            foreach (Move m in Moves) if (best == null || m.Level > best.Level) best = m;
-            Stage match = best == null ? null : pool.Find(f => f.Elem == best.Def.Elem);
-            if (match != null)
+            var counts = new Dictionary<string, int>();
+            foreach (Move m in Moves)
             {
-                offered.Add(match);
-                pool.Remove(match);
+                string elem = m.Def.Elem;
+                if (Array.Exists(Partner.Forms, f => f.Elem == elem)) counts[elem] = (counts.ContainsKey(elem) ? counts[elem] : 0) + 1;
             }
-            while (offered.Count < FormOffers && pool.Count > 0)
-            {
-                int at = M.RangeInt(0, pool.Count);
-                offered.Add(pool[at]);
-                pool.RemoveAt(at);
-            }
-            var cards = new List<Card>();
-            foreach (Stage form in offered)
-            {
-                Stage chosen = form;
-                cards.Add(new Card { Key = "form:" + chosen.Id, Title = chosen.Name, Tag = "Form - " + Data.Elements[chosen.Elem].Name, Color = Data.ElemColor(chosen.Elem), Desc = chosen.Gain, Run = () => TakeForm(chosen) });
-            }
-            return new Choice { Title = Partner.Name + " is changing", Sub = "Choose its form. This lasts for the rest of the run.", Cards = cards };
+            int most = 0;
+            foreach (int n in counts.Values) most = Math.Max(most, n);
+            var tied = new List<Stage>();
+            foreach (Stage f in Partner.Forms) if (most == 0 || (counts.ContainsKey(f.Elem) && counts[f.Elem] == most)) tied.Add(f);
+            return tied[M.RangeInt(0, tied.Count)];
         }
 
         public void Evolve()
@@ -428,7 +418,6 @@ namespace Swarmfall
         float lastImmune = -1;
         public float LastHit;
         const float SecondTypeBonus = 0.25f;
-        const int FormOffers = 3;
         // Physical hits are reduced by Armor, special hits by Will.
         public bool Hurt(float amount, bool special = false)
         {
